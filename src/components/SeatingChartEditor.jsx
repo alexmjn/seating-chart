@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 
 const SeatingChartEditor = () => {
   const [seats, setSeats] = useState([]);
-  const [selectedSeat, setSelectedSeat] = useState(null);
+  const [selectedSeats, setSelectedSeats] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isResizing, setIsResizing] = useState(false);
@@ -11,6 +11,7 @@ const SeatingChartEditor = () => {
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [dragStartPos, setDragStartPos] = useState({ x: 0, y: 0 });
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
 
@@ -24,12 +25,28 @@ const SeatingChartEditor = () => {
     }
   }, []);
 
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (selectedSeats.length > 0) {
+          deleteSelectedSeats();
+        }
+      }
+      if (e.key === 'Escape') {
+        setSelectedSeats([]);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedSeats]);
+
   // Handle mouse wheel for zooming and scrolling
   const handleWheel = (e) => {
     e.preventDefault();
     
     if (e.ctrlKey || e.metaKey) {
-      // Zoom
       const rect = canvasRef.current.getBoundingClientRect();
       const mouseX = e.clientX - rect.left;
       const mouseY = e.clientY - rect.top;
@@ -37,7 +54,6 @@ const SeatingChartEditor = () => {
       const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
       const newZoom = Math.max(0.1, Math.min(3, zoom * zoomFactor));
       
-      // Zoom towards mouse position
       const zoomChange = newZoom / zoom;
       setPan({
         x: mouseX - (mouseX - pan.x) * zoomChange,
@@ -46,7 +62,6 @@ const SeatingChartEditor = () => {
       
       setZoom(newZoom);
     } else {
-      // Pan
       setPan({
         x: pan.x - e.deltaX,
         y: pan.y - e.deltaY
@@ -82,25 +97,51 @@ const SeatingChartEditor = () => {
     setSeats([...seats, newSeat]);
   };
 
-  // Start dragging a seat
-  const startDrag = (e, seat) => {
+  // Handle item selection with multi-select support
+  const handleItemSelect = (e, item) => {
     e.stopPropagation();
+    e.preventDefault();
+    
+    if (e.ctrlKey || e.metaKey) {
+      if (selectedSeats.includes(item.id)) {
+        setSelectedSeats(selectedSeats.filter(id => id !== item.id));
+      } else {
+        setSelectedSeats([...selectedSeats, item.id]);
+      }
+    } else {
+      setSelectedSeats([item.id]);
+    }
+  };
+
+  // Start dragging items
+  const startDrag = (e, item) => {
+    e.stopPropagation();
+    e.preventDefault();
+    
     const coords = screenToCanvas(e.clientX, e.clientY);
+    setDragStartPos(coords);
+    
+    if (!selectedSeats.includes(item.id)) {
+      if (e.ctrlKey || e.metaKey) {
+        setSelectedSeats([...selectedSeats, item.id]);
+      } else {
+        setSelectedSeats([item.id]);
+      }
+    }
     
     setIsDragging(true);
-    setSelectedSeat(seat.id);
-    
     setDragOffset({
-      x: coords.x - seat.x,
-      y: coords.y - seat.y
+      x: coords.x - item.x,
+      y: coords.y - item.y
     });
   };
 
   // Start resizing a seat
   const startResize = (e, seat) => {
     e.stopPropagation();
+    e.preventDefault();
     setIsResizing(true);
-    setSelectedSeat(seat.id);
+    setSelectedSeats([seat.id]);
   };
 
   // Handle mouse move for dragging, resizing, and panning
@@ -112,20 +153,25 @@ const SeatingChartEditor = () => {
         x: pan.x + e.movementX,
         y: pan.y + e.movementY
       });
-    } else if (isDragging && selectedSeat) {
+    } else if (isDragging && selectedSeats.length > 0) {
+      const deltaX = coords.x - dragStartPos.x;
+      const deltaY = coords.y - dragStartPos.y;
+      
       setSeats(seats.map(seat => 
-        seat.id === selectedSeat 
-          ? { ...seat, x: coords.x - dragOffset.x, y: coords.y - dragOffset.y }
+        selectedSeats.includes(seat.id)
+          ? { ...seat, x: seat.x + deltaX, y: seat.y + deltaY }
           : seat
       ));
-    } else if (isResizing && selectedSeat) {
-      const selectedSeatData = seats.find(s => s.id === selectedSeat);
+      
+      setDragStartPos(coords);
+    } else if (isResizing && selectedSeats.length === 1) {
+      const selectedSeatData = seats.find(s => s.id === selectedSeats[0]);
       if (selectedSeatData) {
         const newWidth = Math.max(20, coords.x - selectedSeatData.x);
         const newHeight = Math.max(15, coords.y - selectedSeatData.y);
         
         setSeats(seats.map(seat => 
-          seat.id === selectedSeat 
+          seat.id === selectedSeats[0]
             ? { ...seat, width: newWidth, height: newHeight }
             : seat
         ));
@@ -142,16 +188,22 @@ const SeatingChartEditor = () => {
 
   // Start panning
   const startPan = (e) => {
-    if (e.button === 1 || (e.button === 0 && e.shiftKey)) { // Middle mouse or Shift+click
+    if (e.button === 1 || (e.button === 0 && e.shiftKey)) {
       e.preventDefault();
       setIsPanning(true);
     }
   };
 
-  // Delete selected seat
+  // Delete selected seats
+  const deleteSelectedSeats = () => {
+    setSeats(seats.filter(seat => !selectedSeats.includes(seat.id)));
+    setSelectedSeats([]);
+  };
+
+  // Delete specific seat
   const deleteSeat = (seatId) => {
     setSeats(seats.filter(seat => seat.id !== seatId));
-    setSelectedSeat(null);
+    setSelectedSeats(selectedSeats.filter(id => id !== seatId));
   };
 
   // Toggle fullscreen
@@ -188,6 +240,30 @@ const SeatingChartEditor = () => {
         id: Date.now() + i,
         x: startX + i * (seatWidth + spacing),
         y: startY,
+        width: 40,
+        height: 20,
+        label: '',
+        type: 'seat'
+      });
+    }
+    
+    setSeats([...seats, ...newSeats]);
+  };
+
+  // Add sideways row (vertical orientation)
+  const addSidewaysRow = () => {
+    const startX = seats.length > 0 ? Math.max(...seats.map(s => s.x)) + 60 : 50;
+    const startY = 50;
+    const seatHeight = 40;
+    const spacing = 10;
+    const seatsInRow = 6;
+    
+    const newSeats = [];
+    for (let i = 0; i < seatsInRow; i++) {
+      newSeats.push({
+        id: Date.now() + i,
+        x: startX,
+        y: startY + i * (seatHeight + spacing),
         width: 40,
         height: 20,
         label: '',
@@ -244,12 +320,12 @@ const SeatingChartEditor = () => {
     setSeats([...seats, ...newSeats]);
   };
 
-  // Create template matching the uploaded image
+  // Create template matching the uploaded image (enhanced)
   const createUploadedTemplate = () => {
     const newSeats = [];
     let id = Date.now();
     
-    // Left side rows (based on your chart structure)
+    // Left side rows (9 rows alternating 6-7 seats)
     for (let row = 0; row < 9; row++) {
       const seatsInRow = row % 2 === 0 ? 7 : 6;
       const offsetX = row % 2 === 0 ? 50 : 75;
@@ -267,7 +343,7 @@ const SeatingChartEditor = () => {
       }
     }
     
-    // Right side vertical column
+    // Right side vertical column (12 seats)
     for (let i = 0; i < 12; i++) {
       newSeats.push({
         id: id++,
@@ -278,6 +354,21 @@ const SeatingChartEditor = () => {
         label: '',
         type: 'seat'
       });
+    }
+    
+    // Additional sideways rows on the right
+    for (let col = 0; col < 2; col++) {
+      for (let i = 0; i < 8; i++) {
+        newSeats.push({
+          id: id++,
+          x: 500 + col * 50,
+          y: 80 + i * 35,
+          width: 40,
+          height: 20,
+          label: '',
+          type: 'seat'
+        });
+      }
     }
     
     // Bottom scattered seats
@@ -298,10 +389,32 @@ const SeatingChartEditor = () => {
       });
     });
     
+    // Add coffee table (pre-placed)
+    newSeats.push({
+      id: id++,
+      x: 250,
+      y: 250,
+      width: 80,
+      height: 50,
+      label: 'Coffee Table',
+      type: 'coffee_table'
+    });
+    
+    // Add entrance marker
+    newSeats.push({
+      id: id++,
+      x: 50,
+      y: 480,
+      width: 100,
+      height: 30,
+      label: 'ENTRANCE',
+      type: 'table'
+    });
+    
     setSeats(newSeats);
   };
 
-  // Generate printable PDF
+  // Generate printable PDF with improved layout
   const generatePDF = () => {
     if (seats.length === 0) return;
     
@@ -312,8 +425,16 @@ const SeatingChartEditor = () => {
     const maxX = Math.max(...seats.map(s => s.x + s.width)) + padding;
     const minY = Math.min(...seats.map(s => s.y)) - padding;
     const maxY = Math.max(...seats.map(s => s.y + s.height)) + padding;
-    const width = maxX - minX;
-    const height = maxY - minY;
+    const chartWidth = maxX - minX;
+    const chartHeight = maxY - minY;
+    
+    const pageWidth = 800;
+    const shareListWidth = 200;
+    const availableWidth = pageWidth - shareListWidth - 60;
+    const scale = Math.min(availableWidth / chartWidth, 600 / chartHeight, 1);
+    
+    const scaledWidth = chartWidth * scale;
+    const scaledHeight = chartHeight * scale;
     
     const getItemColor = (type) => {
       switch(type) {
@@ -325,27 +446,35 @@ const SeatingChartEditor = () => {
     };
     
     const svgContent = `
-      <svg width="${width}" height="${height}" viewBox="${minX} ${minY} ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
+      <svg width="${scaledWidth}" height="${scaledHeight}" viewBox="${minX} ${minY} ${chartWidth} ${chartHeight}" xmlns="http://www.w3.org/2000/svg">
         <style>
           .seat { fill: #e5e7eb; stroke: #6b7280; stroke-width: 2; }
           .furniture { stroke: #374151; stroke-width: 2; }
           .seat-text { font-family: Arial, sans-serif; font-size: 10px; text-anchor: middle; fill: #374151; }
           .title { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; text-anchor: middle; fill: #1f2937; }
+          .name-line { font-family: Arial, sans-serif; font-size: 8px; text-anchor: middle; fill: #666; }
         </style>
         
-        <text x="${minX + width/2}" y="${minY + 20}" class="title">AA Meeting Seating Chart</text>
-        <text x="${minX + width/2}" y="${minY + 35}" class="seat-text">Date: _____________ Meeting: _____________</text>
+        <text x="${minX + chartWidth/2}" y="${minY + 20}" class="title">AA Meeting Seating Chart</text>
+        <text x="${minX + chartWidth/2}" y="${minY + 35}" class="seat-text">Date: _____________ Meeting: _____________</text>
         
         ${seats.map((seat, index) => `
           <rect x="${seat.x}" y="${seat.y}" width="${seat.width}" height="${seat.height}" 
                 rx="3" class="${seat.type === 'seat' ? 'seat' : 'furniture'}" 
                 fill="${getItemColor(seat.type)}"/>
           <text x="${seat.x + seat.width/2}" y="${seat.y + seat.height/2 + 3}" class="seat-text">
-            ${seat.label || (seat.type === 'seat' ? (index + 1) : seat.type)}
+            ${seat.label || (seat.type === 'seat' ? '' : seat.type)}
           </text>
+          ${seat.type === 'seat' && !seat.label ? `
+            <text x="${seat.x + seat.width/2}" y="${seat.y - 8}" class="name-line">
+              ___________
+            </text>
+          ` : ''}
         `).join('')}
       </svg>
     `;
+    
+    const seatCount = seats.filter(s => s.type === 'seat').length;
     
     const htmlContent = `
       <!DOCTYPE html>
@@ -354,22 +483,28 @@ const SeatingChartEditor = () => {
           <title>AA Meeting Seating Chart</title>
           <style>
             body { margin: 0; padding: 20px; font-family: Arial, sans-serif; background: white; }
-            .container { display: flex; gap: 20px; }
+            .container { display: flex; gap: 30px; }
             .chart-section { flex: 1; }
-            .names-section { width: 200px; border-left: 2px solid #ccc; padding-left: 20px; }
-            .names-list { list-style: none; padding: 0; margin: 0; }
-            .names-list li { border-bottom: 1px solid #ddd; padding: 8px 0; font-size: 14px; }
+            .share-section { width: ${shareListWidth}px; border-left: 2px solid #ccc; padding-left: 20px; }
+            .share-list { list-style: none; padding: 0; margin: 0; }
+            .share-list li { border-bottom: 1px solid #ddd; padding: 12px 0; font-size: 14px; }
             h3 { margin-top: 0; color: #1f2937; border-bottom: 2px solid #1f2937; padding-bottom: 5px; }
+            .note { font-size: 12px; color: #666; margin-top: 10px; }
             @media print { body { margin: 0; } .container { page-break-inside: avoid; } }
           </style>
         </head>
         <body>
           <div class="container">
-            <div class="chart-section">${svgContent}</div>
-            <div class="names-section">
-              <h3>Attendance</h3>
-              <ul class="names-list">
-                ${Array.from({length: Math.max(20, seats.filter(s => s.type === 'seat').length)}, (_, i) => 
+            <div class="chart-section">
+              ${svgContent}
+              <div class="note">
+                Total seats: ${seatCount} | Names can be written above each seat
+              </div>
+            </div>
+            <div class="share-section">
+              <h3>Share</h3>
+              <ul class="share-list">
+                ${Array.from({length: Math.max(15, Math.ceil(seatCount / 3))}, (_, i) => 
                   `<li>${i + 1}. _________________________</li>`
                 ).join('')}
               </ul>
@@ -413,6 +548,7 @@ const SeatingChartEditor = () => {
         const template = JSON.parse(event.target.result);
         if (template.seats) {
           setSeats(template.seats);
+          setSelectedSeats([]);
         }
       } catch (error) {
         alert('Error loading template file');
@@ -424,6 +560,7 @@ const SeatingChartEditor = () => {
   const clearAll = () => {
     if (confirm('Are you sure you want to clear all items?')) {
       setSeats([]);
+      setSelectedSeats([]);
     }
   };
 
@@ -461,6 +598,9 @@ const SeatingChartEditor = () => {
             <button onClick={addRow} className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
               Add Row (8 seats)
             </button>
+            <button onClick={addSidewaysRow} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+              Add Sideways Row (6 seats)
+            </button>
             <button onClick={addCircle} className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
               Add Circle (12 seats)
             </button>
@@ -476,7 +616,14 @@ const SeatingChartEditor = () => {
             <button onClick={resetView} className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">
               Reset View
             </button>
-            <button onClick={clearAll} className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">
+            <button 
+              onClick={deleteSelectedSeats} 
+              disabled={selectedSeats.length === 0}
+              className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:bg-gray-400"
+            >
+              Delete Selected ({selectedSeats.length})
+            </button>
+            <button onClick={clearAll} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
               Clear All
             </button>
             <button onClick={generatePDF} disabled={seats.length === 0} className="px-4 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600 disabled:bg-gray-400">
@@ -492,9 +639,9 @@ const SeatingChartEditor = () => {
           </div>
           
           <div className="text-sm text-gray-600">
-            <p>• Click to add seats • Drag to move • Right-click to delete • Drag bottom-right corner to resize</p>
-            <p>• Mouse wheel: scroll • Ctrl+wheel: zoom • Shift+click: pan • Double-click: edit label</p>
-            <p>• Zoom: {Math.round(zoom * 100)}%</p>
+            <p>• Click to add seats • Drag to move • Ctrl+click for multi-select • Right-click to delete • Drag corner to resize</p>
+            <p>• Mouse wheel: scroll • Ctrl+wheel: zoom • Shift+click: pan • Double-click: edit label • Delete key: remove selected</p>
+            <p>• Selected: {selectedSeats.length} items • Zoom: {Math.round(zoom * 100)}%</p>
           </div>
         </div>
 
@@ -522,88 +669,83 @@ const SeatingChartEditor = () => {
             {/* Transform group for zoom and pan */}
             <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
               {/* Render seats and furniture */}
-              {seats.map((item) => (
-                <g key={item.id}>
-                  {/* Main rectangle */}
-                  <rect
-                    x={item.x}
-                    y={item.y}
-                    width={item.width}
-                    height={item.height}
-                    fill={getItemColor(item, selectedSeat === item.id)}
-                    stroke={selectedSeat === item.id ? "#1d4ed8" : "#6b7280"}
-                    strokeWidth="2"
-                    rx="3"
-                    className="cursor-move hover:opacity-80"
-                    onMouseDown={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      startDrag(e, item);
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      setSelectedSeat(item.id);
-                    }}
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      deleteSeat(item.id);
-                    }}
-                    onDoubleClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      setEditingLabel(item.id);
-                    }}
-                  />
-                  
-                  {/* Resize handle */}
-                  {selectedSeat === item.id && (
+              {seats.map((item) => {
+                const isSelected = selectedSeats.includes(item.id);
+                return (
+                  <g key={item.id}>
+                    {/* Main rectangle */}
                     <rect
-                      x={item.x + item.width - 5}
-                      y={item.y + item.height - 5}
-                      width="10"
-                      height="10"
-                      fill="#1d4ed8"
-                      className="cursor-nw-resize"
-                      onMouseDown={(e) => startResize(e, item)}
+                      x={item.x}
+                      y={item.y}
+                      width={item.width}
+                      height={item.height}
+                      fill={getItemColor(item, isSelected)}
+                      stroke={isSelected ? "#1d4ed8" : "#6b7280"}
+                      strokeWidth={isSelected ? "3" : "2"}
+                      rx="3"
+                      className="cursor-move hover:opacity-80"
+                      onMouseDown={(e) => startDrag(e, item)}
+                      onClick={(e) => handleItemSelect(e, item)}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        deleteSeat(item.id);
+                      }}
+                      onDoubleClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        setEditingLabel(item.id);
+                      }}
                     />
-                  )}
-                  
-                  {/* Label */}
-                  {editingLabel === item.id ? (
-                    <foreignObject x={item.x} y={item.y + item.height/2 - 10} width={item.width} height="20">
-                      <input
-                        type="text"
-                        defaultValue={item.label}
-                        className="w-full text-xs text-center border-none outline-none bg-transparent"
-                        onBlur={(e) => {
-                          setSeats(seats.map(s => s.id === item.id ? {...s, label: e.target.value} : s));
-                          setEditingLabel(null);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
+                    
+                    {/* Resize handle (only show for single selection) */}
+                    {isSelected && selectedSeats.length === 1 && (
+                      <rect
+                        x={item.x + item.width - 5}
+                        y={item.y + item.height - 5}
+                        width="10"
+                        height="10"
+                        fill="#1d4ed8"
+                        className="cursor-nw-resize"
+                        onMouseDown={(e) => startResize(e, item)}
+                      />
+                    )}
+                    
+                    {/* Label */}
+                    {editingLabel === item.id ? (
+                      <foreignObject x={item.x} y={item.y + item.height/2 - 10} width={item.width} height="20">
+                        <input
+                          type="text"
+                          defaultValue={item.label}
+                          className="w-full text-xs text-center border-none outline-none bg-transparent"
+                          onBlur={(e) => {
                             setSeats(seats.map(s => s.id === item.id ? {...s, label: e.target.value} : s));
                             setEditingLabel(null);
-                          }
-                        }}
-                        autoFocus
-                      />
-                    </foreignObject>
-                  ) : (
-                    <text
-                      x={item.x + item.width / 2}
-                      y={item.y + item.height / 2 + 4}
-                      textAnchor="middle"
-                      fontSize="10"
-                      fill="#374151"
-                      pointerEvents="none"
-                    >
-                      {item.label || (item.type === 'seat' ? (seats.indexOf(item) + 1) : item.type)}
-                    </text>
-                  )}
-                </g>
-              ))}
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              setSeats(seats.map(s => s.id === item.id ? {...s, label: e.target.value} : s));
+                              setEditingLabel(null);
+                            }
+                          }}
+                          autoFocus
+                        />
+                      </foreignObject>
+                    ) : (
+                      <text
+                        x={item.x + item.width / 2}
+                        y={item.y + item.height / 2 + 4}
+                        textAnchor="middle"
+                        fontSize="10"
+                        fill="#374151"
+                        pointerEvents="none"
+                      >
+                        {item.label || (item.type === 'seat' ? (seats.indexOf(item) + 1) : item.type)}
+                      </text>
+                    )}
+                  </g>
+                );
+              })}
               
               {/* Info text when empty */}
               {seats.length === 0 && (
@@ -625,7 +767,7 @@ const SeatingChartEditor = () => {
         {/* Status bar */}
         <div className="border-t p-2 bg-gray-50 text-sm text-gray-600 flex justify-between">
           <span>Total items: {seats.length} ({seats.filter(s => s.type === 'seat').length} seats, {seats.filter(s => s.type !== 'seat').length} furniture)</span>
-          <span>{selectedSeat ? 'Item selected - drag to move, resize with handle, right-click to delete, double-click to edit label' : 'Click to add items'}</span>
+          <span>{selectedSeats.length > 0 ? `${selectedSeats.length} items selected - drag to move, resize with handle, right-click to delete, double-click to edit label` : 'Click to add items'}</span>
         </div>
       </div>
     </div>
