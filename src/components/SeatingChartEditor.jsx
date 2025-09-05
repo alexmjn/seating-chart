@@ -78,7 +78,7 @@ const SeatingChartEditor = () => {
     };
   };
 
-  // Add a new seat at clicked position
+  // Add a new seat at double-clicked position
   const addSeat = (e) => {
     if (isDragging || isResizing || isPanning || editingLabel) return;
     
@@ -97,18 +97,28 @@ const SeatingChartEditor = () => {
     setSeats([...seats, newSeat]);
   };
 
+  // Handle canvas click (deselect all)
+  const handleCanvasClick = (e) => {
+    if (isDragging || isResizing || isPanning || editingLabel) return;
+    setSelectedSeats([]);
+  };
+
   // Handle item selection with multi-select support
   const handleItemSelect = (e, item) => {
     e.stopPropagation();
     e.preventDefault();
     
     if (e.ctrlKey || e.metaKey) {
-      if (selectedSeats.includes(item.id)) {
-        setSelectedSeats(selectedSeats.filter(id => id !== item.id));
-      } else {
-        setSelectedSeats([...selectedSeats, item.id]);
-      }
+      // Multi-select: toggle this item
+      setSelectedSeats(prev => {
+        if (prev.includes(item.id)) {
+          return prev.filter(id => id !== item.id);
+        } else {
+          return [...prev, item.id];
+        }
+      });
     } else {
+      // Single select: select only this item
       setSelectedSeats([item.id]);
     }
   };
@@ -121,9 +131,10 @@ const SeatingChartEditor = () => {
     const coords = screenToCanvas(e.clientX, e.clientY);
     setDragStartPos(coords);
     
+    // If this item isn't selected, select it (and deselect others unless multi-selecting)
     if (!selectedSeats.includes(item.id)) {
       if (e.ctrlKey || e.metaKey) {
-        setSelectedSeats([...selectedSeats, item.id]);
+        setSelectedSeats(prev => [...prev, item.id]);
       } else {
         setSelectedSeats([item.id]);
       }
@@ -420,7 +431,7 @@ const SeatingChartEditor = () => {
     
     const printWindow = window.open('', '_blank');
     
-    const padding = 50;
+    const padding = 40;
     const minX = Math.min(...seats.map(s => s.x)) - padding;
     const maxX = Math.max(...seats.map(s => s.x + s.width)) + padding;
     const minY = Math.min(...seats.map(s => s.y)) - padding;
@@ -428,10 +439,17 @@ const SeatingChartEditor = () => {
     const chartWidth = maxX - minX;
     const chartHeight = maxY - minY;
     
-    const pageWidth = 800;
-    const shareListWidth = 200;
-    const availableWidth = pageWidth - shareListWidth - 60;
-    const scale = Math.min(availableWidth / chartWidth, 600 / chartHeight, 1);
+    // Better scaling for PDF layout
+    const pageWidth = 1000;
+    const shareListWidth = 250;
+    const margin = 40;
+    const availableWidth = pageWidth - shareListWidth - (margin * 3); // Left, center, right margins
+    const availableHeight = 700;
+    
+    // Scale to fit available space with some breathing room
+    const scaleX = availableWidth / chartWidth;
+    const scaleY = availableHeight / chartHeight;
+    const scale = Math.min(scaleX, scaleY, 1.2); // Max scale of 1.2 to avoid too much enlargement
     
     const scaledWidth = chartWidth * scale;
     const scaledHeight = chartHeight * scale;
@@ -451,12 +469,13 @@ const SeatingChartEditor = () => {
           .seat { fill: #e5e7eb; stroke: #6b7280; stroke-width: 2; }
           .furniture { stroke: #374151; stroke-width: 2; }
           .seat-text { font-family: Arial, sans-serif; font-size: 10px; text-anchor: middle; fill: #374151; }
-          .title { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; text-anchor: middle; fill: #1f2937; }
+          .title { font-family: Arial, sans-serif; font-size: 18px; font-weight: bold; text-anchor: middle; fill: #1f2937; }
+          .subtitle { font-family: Arial, sans-serif; font-size: 12px; text-anchor: middle; fill: #374151; }
           .name-line { font-family: Arial, sans-serif; font-size: 8px; text-anchor: middle; fill: #666; }
         </style>
         
-        <text x="${minX + chartWidth/2}" y="${minY + 20}" class="title">AA Meeting Seating Chart</text>
-        <text x="${minX + chartWidth/2}" y="${minY + 35}" class="seat-text">Date: _____________ Meeting: _____________</text>
+        <text x="${minX + chartWidth/2}" y="${minY + 25}" class="title">AA Meeting Seating Chart</text>
+        <text x="${minX + chartWidth/2}" y="${minY + 45}" class="subtitle">Date: _____________ Meeting: _____________</text>
         
         ${seats.map((seat, index) => `
           <rect x="${seat.x}" y="${seat.y}" width="${seat.width}" height="${seat.height}" 
@@ -466,7 +485,7 @@ const SeatingChartEditor = () => {
             ${seat.label || (seat.type === 'seat' ? '' : seat.type)}
           </text>
           ${seat.type === 'seat' && !seat.label ? `
-            <text x="${seat.x + seat.width/2}" y="${seat.y - 8}" class="name-line">
+            <text x="${seat.x + seat.width/2}" y="${seat.y - 10}" class="name-line">
               ___________
             </text>
           ` : ''}
@@ -482,21 +501,71 @@ const SeatingChartEditor = () => {
         <head>
           <title>AA Meeting Seating Chart</title>
           <style>
-            body { margin: 0; padding: 20px; font-family: Arial, sans-serif; background: white; }
-            .container { display: flex; gap: 30px; }
-            .chart-section { flex: 1; }
-            .share-section { width: ${shareListWidth}px; border-left: 2px solid #ccc; padding-left: 20px; }
-            .share-list { list-style: none; padding: 0; margin: 0; }
-            .share-list li { border-bottom: 1px solid #ddd; padding: 12px 0; font-size: 14px; }
-            h3 { margin-top: 0; color: #1f2937; border-bottom: 2px solid #1f2937; padding-bottom: 5px; }
-            .note { font-size: 12px; color: #666; margin-top: 10px; }
-            @media print { body { margin: 0; } .container { page-break-inside: avoid; } }
+            body { 
+              margin: 0; 
+              padding: ${margin}px; 
+              font-family: Arial, sans-serif; 
+              background: white; 
+              width: ${pageWidth}px;
+            }
+            .container { 
+              display: flex; 
+              gap: ${margin}px; 
+              width: 100%;
+              height: auto;
+            }
+            .chart-section { 
+              flex: 1; 
+              display: flex;
+              flex-direction: column;
+              justify-content: flex-start;
+            }
+            .chart-wrapper {
+              display: flex;
+              justify-content: center;
+              align-items: flex-start;
+            }
+            .share-section { 
+              width: ${shareListWidth}px; 
+              border-left: 2px solid #ccc; 
+              padding-left: ${margin/2}px; 
+              flex-shrink: 0;
+            }
+            .share-list { 
+              list-style: none; 
+              padding: 0; 
+              margin: 0; 
+            }
+            .share-list li { 
+              border-bottom: 1px solid #ddd; 
+              padding: 14px 0; 
+              font-size: 14px; 
+            }
+            h3 { 
+              margin-top: 0; 
+              color: #1f2937; 
+              border-bottom: 2px solid #1f2937; 
+              padding-bottom: 8px;
+              font-size: 18px;
+            }
+            .note { 
+              font-size: 12px; 
+              color: #666; 
+              margin-top: 20px; 
+              text-align: center;
+            }
+            @media print { 
+              body { margin: 0; padding: 20px; } 
+              .container { page-break-inside: avoid; }
+            }
           </style>
         </head>
         <body>
           <div class="container">
             <div class="chart-section">
-              ${svgContent}
+              <div class="chart-wrapper">
+                ${svgContent}
+              </div>
               <div class="note">
                 Total seats: ${seatCount} | Names can be written above each seat
               </div>
@@ -504,7 +573,7 @@ const SeatingChartEditor = () => {
             <div class="share-section">
               <h3>Share</h3>
               <ul class="share-list">
-                ${Array.from({length: Math.max(15, Math.ceil(seatCount / 3))}, (_, i) => 
+                ${Array.from({length: Math.max(20, Math.ceil(seatCount / 2))}, (_, i) => 
                   `<li>${i + 1}. _________________________</li>`
                 ).join('')}
               </ul>
@@ -639,8 +708,8 @@ const SeatingChartEditor = () => {
           </div>
           
           <div className="text-sm text-gray-600">
-            <p>• Click to add seats • Drag to move • Ctrl+click for multi-select • Right-click to delete • Drag corner to resize</p>
-            <p>• Mouse wheel: scroll • Ctrl+wheel: zoom • Shift+click: pan • Double-click: edit label • Delete key: remove selected</p>
+            <p>• Double-click empty space to add seats • Drag to move • Ctrl+click for multi-select • Right-click to delete • Drag corner to resize</p>
+            <p>• Mouse wheel: scroll • Ctrl+wheel: zoom • Shift+click: pan • Double-click item: edit label • Delete key: remove selected</p>
             <p>• Selected: {selectedSeats.length} items • Zoom: {Math.round(zoom * 100)}%</p>
           </div>
         </div>
@@ -650,7 +719,8 @@ const SeatingChartEditor = () => {
           <svg
             ref={canvasRef}
             className="w-full h-full cursor-crosshair"
-            onClick={addSeat}
+            onClick={handleCanvasClick}
+            onDoubleClick={addSeat}
             onMouseMove={handleMouseMove}
             onMouseUp={stopInteraction}
             onMouseDown={startPan}
@@ -757,7 +827,7 @@ const SeatingChartEditor = () => {
                   fill="#9ca3af"
                   pointerEvents="none"
                 >
-                  Click anywhere to add seats, or use the buttons above for quick layouts
+                  Double-click anywhere to add seats, or use the buttons above for quick layouts
                 </text>
               )}
             </g>
@@ -767,7 +837,7 @@ const SeatingChartEditor = () => {
         {/* Status bar */}
         <div className="border-t p-2 bg-gray-50 text-sm text-gray-600 flex justify-between">
           <span>Total items: {seats.length} ({seats.filter(s => s.type === 'seat').length} seats, {seats.filter(s => s.type !== 'seat').length} furniture)</span>
-          <span>{selectedSeats.length > 0 ? `${selectedSeats.length} items selected - drag to move, resize with handle, right-click to delete, double-click to edit label` : 'Click to add items'}</span>
+          <span>{selectedSeats.length > 0 ? `${selectedSeats.length} items selected - drag to move, resize with handle, right-click to delete, double-click to edit label` : 'Double-click to add items'}</span>
         </div>
       </div>
     </div>
