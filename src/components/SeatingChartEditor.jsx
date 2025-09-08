@@ -119,7 +119,7 @@ const SeatingChartEditor = () => {
   };
 
   // Handle item selection with multi-select support
-  // Handle item selection with multi-select support
+// Handle item selection with multi-select support
 const handleItemSelect = (e, item) => {
   e.stopPropagation();
   e.preventDefault();
