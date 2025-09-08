@@ -12,6 +12,8 @@ const SeatingChartEditor = () => {
   const [isPanning, setIsPanning] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [dragStartPos, setDragStartPos] = useState({ x: 0, y: 0 });
+  const [isSelecting, setIsSelecting] = useState(false);
+  const [selectionBox, setSelectionBox] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
 
@@ -80,7 +82,7 @@ const SeatingChartEditor = () => {
 
   // Add a new seat at double-clicked position
   const addSeat = (e) => {
-    if (isDragging || isResizing || isPanning || editingLabel) return;
+    if (isDragging || isResizing || isPanning || editingLabel || isSelecting) return;
     
     const coords = screenToCanvas(e.clientX, e.clientY);
     
@@ -97,10 +99,23 @@ const SeatingChartEditor = () => {
     setSeats([...seats, newSeat]);
   };
 
-  // Handle canvas click (deselect all)
+  // Handle canvas click (deselect all or start selection)
   const handleCanvasClick = (e) => {
+    if (isDragging || isResizing || isPanning || editingLabel || isSelecting) return;
+    if (!e.ctrlKey && !e.metaKey) {
+      setSelectedSeats([]);
+    }
+  };
+
+  // Start selection drag
+  const startSelection = (e) => {
+    if (e.ctrlKey || e.metaKey || e.shiftKey) return;
     if (isDragging || isResizing || isPanning || editingLabel) return;
-    setSelectedSeats([]);
+    
+    const coords = screenToCanvas(e.clientX, e.clientY);
+    setIsSelecting(true);
+    setSelectionBox({ x: coords.x, y: coords.y, width: 0, height: 0 });
+    setDragStartPos(coords);
   };
 
   // Handle item selection with multi-select support
@@ -109,16 +124,13 @@ const SeatingChartEditor = () => {
     e.preventDefault();
     
     if (e.ctrlKey || e.metaKey) {
-      // Multi-select: toggle this item
       setSelectedSeats(prev => {
-        if (prev.includes(item.id)) {
-          return prev.filter(id => id !== item.id);
-        } else {
-          return [...prev, item.id];
-        }
+        const newSelection = prev.includes(item.id) 
+          ? prev.filter(id => id !== item.id)
+          : [...prev, item.id];
+        return newSelection;
       });
     } else {
-      // Single select: select only this item
       setSelectedSeats([item.id]);
     }
   };
@@ -131,7 +143,6 @@ const SeatingChartEditor = () => {
     const coords = screenToCanvas(e.clientX, e.clientY);
     setDragStartPos(coords);
     
-    // If this item isn't selected, select it (and deselect others unless multi-selecting)
     if (!selectedSeats.includes(item.id)) {
       if (e.ctrlKey || e.metaKey) {
         setSelectedSeats(prev => [...prev, item.id]);
@@ -155,7 +166,7 @@ const SeatingChartEditor = () => {
     setSelectedSeats([seat.id]);
   };
 
-  // Handle mouse move for dragging, resizing, and panning
+  // Handle mouse move for dragging, resizing, selecting, and panning
   const handleMouseMove = (e) => {
     const coords = screenToCanvas(e.clientX, e.clientY);
     
@@ -164,6 +175,25 @@ const SeatingChartEditor = () => {
         x: pan.x + e.movementX,
         y: pan.y + e.movementY
       });
+    } else if (isSelecting) {
+      const newBox = {
+        x: Math.min(dragStartPos.x, coords.x),
+        y: Math.min(dragStartPos.y, coords.y),
+        width: Math.abs(coords.x - dragStartPos.x),
+        height: Math.abs(coords.y - dragStartPos.y)
+      };
+      setSelectionBox(newBox);
+      
+      const selectedIds = seats.filter(seat => {
+        const seatCenterX = seat.x + seat.width / 2;
+        const seatCenterY = seat.y + seat.height / 2;
+        return seatCenterX >= newBox.x && 
+               seatCenterX <= newBox.x + newBox.width &&
+               seatCenterY >= newBox.y && 
+               seatCenterY <= newBox.y + newBox.height;
+      }).map(seat => seat.id);
+      
+      setSelectedSeats(selectedIds);
     } else if (isDragging && selectedSeats.length > 0) {
       const deltaX = coords.x - dragStartPos.x;
       const deltaY = coords.y - dragStartPos.y;
@@ -190,11 +220,13 @@ const SeatingChartEditor = () => {
     }
   };
 
-  // Stop dragging/resizing/panning
+  // Stop dragging/resizing/panning/selecting
   const stopInteraction = () => {
     setIsDragging(false);
     setIsResizing(false);
     setIsPanning(false);
+    setIsSelecting(false);
+    setSelectionBox({ x: 0, y: 0, width: 0, height: 0 });
   };
 
   // Start panning
@@ -202,6 +234,67 @@ const SeatingChartEditor = () => {
     if (e.button === 1 || (e.button === 0 && e.shiftKey)) {
       e.preventDefault();
       setIsPanning(true);
+    } else if (e.button === 0 && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+      startSelection(e);
+    }
+  };
+
+  // Orient selected items - align and distribute evenly
+  const orientSelectedItems = () => {
+    if (selectedSeats.length < 2) return;
+    
+    const selectedItems = seats.filter(s => selectedSeats.includes(s.id));
+    
+    // Calculate the spread to determine orientation
+    const xPositions = selectedItems.map(s => s.x + s.width / 2);
+    const yPositions = selectedItems.map(s => s.y + s.height / 2);
+    const xSpread = Math.max(...xPositions) - Math.min(...xPositions);
+    const ySpread = Math.max(...yPositions) - Math.min(...yPositions);
+    
+    if (xSpread > ySpread) {
+      // Horizontal alignment - align Y, distribute X evenly
+      const avgY = yPositions.reduce((sum, y) => sum + y, 0) / yPositions.length;
+      const minX = Math.min(...xPositions);
+      const maxX = Math.max(...xPositions);
+      const spacing = selectedItems.length > 1 ? (maxX - minX) / (selectedItems.length - 1) : 0;
+      
+      // Sort by current X position and redistribute
+      const sortedItems = selectedItems.sort((a, b) => (a.x + a.width / 2) - (b.x + b.width / 2));
+      
+      setSeats(seats.map(seat => {
+        const itemIndex = sortedItems.findIndex(s => s.id === seat.id);
+        if (itemIndex !== -1) {
+          const newCenterX = minX + (spacing * itemIndex);
+          return {
+            ...seat,
+            x: newCenterX - seat.width / 2,
+            y: avgY - seat.height / 2
+          };
+        }
+        return seat;
+      }));
+    } else {
+      // Vertical alignment - align X, distribute Y evenly
+      const avgX = xPositions.reduce((sum, x) => sum + x, 0) / xPositions.length;
+      const minY = Math.min(...yPositions);
+      const maxY = Math.max(...yPositions);
+      const spacing = selectedItems.length > 1 ? (maxY - minY) / (selectedItems.length - 1) : 0;
+      
+      // Sort by current Y position and redistribute
+      const sortedItems = selectedItems.sort((a, b) => (a.y + a.height / 2) - (b.y + b.height / 2));
+      
+      setSeats(seats.map(seat => {
+        const itemIndex = sortedItems.findIndex(s => s.id === seat.id);
+        if (itemIndex !== -1) {
+          const newCenterY = minY + (spacing * itemIndex);
+          return {
+            ...seat,
+            x: avgX - seat.width / 2,
+            y: newCenterY - seat.height / 2
+          };
+        }
+        return seat;
+      }));
     }
   };
 
@@ -229,12 +322,6 @@ const SeatingChartEditor = () => {
       document.mozCancelFullScreen?.();
     }
     setIsFullscreen(!isFullscreen);
-  };
-
-  // Reset view
-  const resetView = () => {
-    setZoom(1);
-    setPan({ x: 0, y: 0 });
   };
 
   // Add multiple seats in a row
@@ -283,28 +370,6 @@ const SeatingChartEditor = () => {
     }
     
     setSeats([...seats, ...newSeats]);
-  };
-
-  // Add furniture
-  const addFurniture = (type) => {
-    const dimensions = {
-      couch: { width: 120, height: 40, label: 'Couch' },
-      table: { width: 80, height: 60, label: 'Table' },
-      coffee_table: { width: 60, height: 40, label: 'Coffee Table' }
-    };
-    
-    const dim = dimensions[type];
-    const newItem = {
-      id: Date.now(),
-      x: 100,
-      y: 100,
-      width: dim.width,
-      height: dim.height,
-      label: dim.label,
-      type: type
-    };
-    
-    setSeats([...seats, newItem]);
   };
 
   // Add circle arrangement
@@ -439,17 +504,15 @@ const SeatingChartEditor = () => {
     const chartWidth = maxX - minX;
     const chartHeight = maxY - minY;
     
-    // Better scaling for PDF layout
     const pageWidth = 1000;
     const shareListWidth = 250;
     const margin = 40;
-    const availableWidth = pageWidth - shareListWidth - (margin * 3); // Left, center, right margins
+    const availableWidth = pageWidth - shareListWidth - (margin * 3);
     const availableHeight = 700;
     
-    // Scale to fit available space with some breathing room
     const scaleX = availableWidth / chartWidth;
     const scaleY = availableHeight / chartHeight;
-    const scale = Math.min(scaleX, scaleY, 1.2); // Max scale of 1.2 to avoid too much enlargement
+    const scale = Math.min(scaleX, scaleY, 1.2);
     
     const scaledWidth = chartWidth * scale;
     const scaledHeight = chartHeight * scale;
@@ -673,17 +736,12 @@ const SeatingChartEditor = () => {
             <button onClick={addCircle} className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
               Add Circle (12 seats)
             </button>
-            <button onClick={() => addFurniture('couch')} className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600">
-              Add Couch
-            </button>
-            <button onClick={() => addFurniture('table')} className="px-4 py-2 bg-emerald-500 text-white rounded hover:bg-emerald-600">
-              Add Table
-            </button>
-            <button onClick={() => addFurniture('coffee_table')} className="px-4 py-2 bg-amber-500 text-white rounded hover:bg-amber-600">
-              Add Coffee Table
-            </button>
-            <button onClick={resetView} className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">
-              Reset View
+            <button 
+              onClick={orientSelectedItems} 
+              disabled={selectedSeats.length < 2}
+              className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:bg-gray-400"
+            >
+              Orient Selected ({selectedSeats.length})
             </button>
             <button 
               onClick={deleteSelectedSeats} 
@@ -708,9 +766,9 @@ const SeatingChartEditor = () => {
           </div>
           
           <div className="text-sm text-gray-600">
-            <p>• Double-click empty space to add seats • Drag to move • Ctrl+click for multi-select • Right-click to delete • Drag corner to resize</p>
-            <p>• Mouse wheel: scroll • Ctrl+wheel: zoom • Shift+click: pan • Double-click item: edit label • Delete key: remove selected</p>
-            <p>• Selected: {selectedSeats.length} items • Zoom: {Math.round(zoom * 100)}%</p>
+            <p>• Double-click empty space to add seats • Drag empty space to select multiple • Ctrl+click for multi-select • Right-click to delete</p>
+            <p>• Mouse wheel: scroll • Ctrl+wheel: zoom • Shift+click: pan • Double-click item: edit label • Drag corner to resize • Delete key: remove selected</p>
+            <p>• Selected: {selectedSeats.length} items • Zoom: {Math.round(zoom * 100)}% • Orient: align and distribute selected items evenly</p>
           </div>
         </div>
 
@@ -726,7 +784,7 @@ const SeatingChartEditor = () => {
             onMouseDown={startPan}
             onMouseLeave={stopInteraction}
             onWheel={handleWheel}
-            style={{ cursor: isPanning ? 'grabbing' : isDragging ? 'grabbing' : isResizing ? 'nw-resize' : 'crosshair' }}
+            style={{ cursor: isPanning ? 'grabbing' : isDragging ? 'grabbing' : isResizing ? 'nw-resize' : isSelecting ? 'crosshair' : 'default' }}
           >
             {/* Grid background */}
             <defs>
@@ -738,6 +796,21 @@ const SeatingChartEditor = () => {
             
             {/* Transform group for zoom and pan */}
             <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
+              {/* Selection box */}
+              {isSelecting && selectionBox.width > 0 && selectionBox.height > 0 && (
+                <rect
+                  x={selectionBox.x}
+                  y={selectionBox.y}
+                  width={selectionBox.width}
+                  height={selectionBox.height}
+                  fill="rgba(59, 130, 246, 0.1)"
+                  stroke="#3b82f6"
+                  strokeWidth="2"
+                  strokeDasharray="5,5"
+                  pointerEvents="none"
+                />
+              )}
+              
               {/* Render seats and furniture */}
               {seats.map((item) => {
                 const isSelected = selectedSeats.includes(item.id);
@@ -837,7 +910,7 @@ const SeatingChartEditor = () => {
         {/* Status bar */}
         <div className="border-t p-2 bg-gray-50 text-sm text-gray-600 flex justify-between">
           <span>Total items: {seats.length} ({seats.filter(s => s.type === 'seat').length} seats, {seats.filter(s => s.type !== 'seat').length} furniture)</span>
-          <span>{selectedSeats.length > 0 ? `${selectedSeats.length} items selected - drag to move, resize with handle, right-click to delete, double-click to edit label` : 'Double-click to add items'}</span>
+          <span>{selectedSeats.length > 0 ? `${selectedSeats.length} items selected - drag to move, orient to align, resize with handle, right-click to delete` : 'Double-click to add items'}</span>
         </div>
       </div>
     </div>
