@@ -119,21 +119,25 @@ const SeatingChartEditor = () => {
   };
 
   // Handle item selection with multi-select support
-  const handleItemSelect = (e, item) => {
-    e.stopPropagation();
-    e.preventDefault();
-    
-    if (e.ctrlKey || e.metaKey) {
-      setSelectedSeats(prev => {
-        const newSelection = prev.includes(item.id) 
-          ? prev.filter(id => id !== item.id)
-          : [...prev, item.id];
-        return newSelection;
-      });
-    } else {
-      setSelectedSeats([item.id]);
-    }
-  };
+  // Handle item selection with multi-select support
+const handleItemSelect = (e, item) => {
+  e.stopPropagation();
+  e.preventDefault();
+  
+  if (e.ctrlKey || e.metaKey) {
+    // Multi-select: toggle this item
+    setSelectedSeats(prev => {
+      if (prev.includes(item.id)) {
+        return prev.filter(id => id !== item.id);
+      } else {
+        return [...prev, item.id];
+      }
+    });
+  } else {
+    // Single select: select only this item
+    setSelectedSeats([item.id]);
+  }
+};
 
   // Start dragging items
   const startDrag = (e, item) => {
