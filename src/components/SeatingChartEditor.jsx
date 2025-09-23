@@ -238,11 +238,13 @@ const handleItemSelect = (e, item) => {
     if (e.button === 1 || (e.button === 0 && e.shiftKey)) {
       e.preventDefault();
       setIsPanning(true);
-    } else if (e.button === 0 && !e.ctrlKey && !e.metaKey && !e.shiftKey && e.target === canvasRef.current) {
+    } else if (e.button === 0 && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+      // Start selection if not clicking on any modifier keys
+      // The SVG rect elements will stop propagation, so this only fires on empty space
       startSelection(e);
     }
   };
-
+  
   // Orient selected items - align and distribute evenly
   const orientSelectedItems = () => {
     if (selectedSeats.length < 2) return;
@@ -401,98 +403,130 @@ const handleItemSelect = (e, item) => {
   };
 
   // Create template matching the uploaded image (enhanced)
-  const createUploadedTemplate = () => {
-    const newSeats = [];
-    let id = Date.now();
-    
-    // Left side rows (9 rows alternating 6-7 seats)
-    for (let row = 0; row < 9; row++) {
-      const seatsInRow = row % 2 === 0 ? 7 : 6;
-      const offsetX = row % 2 === 0 ? 50 : 75;
-      
-      for (let i = 0; i < seatsInRow; i++) {
-        newSeats.push({
-          id: id++,
-          x: offsetX + i * 50,
-          y: 60 + row * 40,
-          width: 40,
-          height: 20,
-          label: '',
-          type: 'seat'
-        });
-      }
-    }
-    
-    // Right side vertical column (12 seats)
-    for (let i = 0; i < 12; i++) {
+  // Create template matching the hand-drawn diagram
+const createUploadedTemplate = () => {
+  const newSeats = [];
+  let id = Date.now();
+  
+  // Left side - back row (8 seats, more spread out)
+  for (let i = 0; i < 8; i++) {
+    newSeats.push({
+      id: id++,
+      x: 50 + i * 25, // wider spacing
+      y: 60,
+      width: 40,
+      height: 20,
+      label: '',
+      type: 'seat'
+    });
+  }
+
+  // Left side - front 4 columns (11 seats each, tighter spacing)
+  for (let col = 0; col < 4; col++) {
+    for (let row = 0; row < 11; row++) {
       newSeats.push({
         id: id++,
-        x: 450,
-        y: 60 + i * 30,
+        x: 50 + col * 50, // normal column spacing
+        y: 95 + row * 32, // tighter vertical spacing to fit 11 seats
         width: 40,
         height: 20,
         label: '',
         type: 'seat'
       });
     }
-    
-    // Additional sideways rows on the right
-    for (let col = 0; col < 2; col++) {
-      for (let i = 0; i < 8; i++) {
-        newSeats.push({
-          id: id++,
-          x: 500 + col * 50,
-          y: 80 + i * 35,
-          width: 40,
-          height: 20,
-          label: '',
-          type: 'seat'
-        });
-      }
-    }
-    
-    // Bottom scattered seats
-    const bottomPositions = [
-      {x: 100, y: 430}, {x: 150, y: 450}, {x: 200, y: 430},
-      {x: 250, y: 450}, {x: 300, y: 430}, {x: 350, y: 450}
-    ];
-    
-    bottomPositions.forEach(pos => {
+  }
+  
+  // Top horizontal row
+  for (let i = 0; i < 8; i++) {
+    newSeats.push({
+      id: id++,
+      x: 300 + i * 50,
+      y: 40,
+      width: 40,
+      height: 20,
+      label: '',
+      type: 'seat'
+    });
+  }
+  
+  // Center area - 5 horizontal rows
+  for (let row = 0; row < 5; row++) {
+    for (let seat = 0; seat < 8; seat++) {
       newSeats.push({
         id: id++,
-        x: pos.x,
-        y: pos.y,
+        x: 300 + seat * 50,
+        y: 120 + row * 40,
         width: 40,
         height: 20,
         label: '',
         type: 'seat'
       });
-    });
-    
-    // Add coffee table (pre-placed)
+    }
+  }
+  
+  // Right side vertical column
+  for (let row = 0; row < 12; row++) {
     newSeats.push({
       id: id++,
-      x: 250,
-      y: 250,
-      width: 80,
-      height: 50,
-      label: 'Coffee Table',
-      type: 'coffee_table'
+      x: 720,
+      y: 60 + row * 35,
+      width: 40,
+      height: 20,
+      label: '',
+      type: 'seat'
     });
-    
-    // Add entrance marker
-    newSeats.push({
-      id: id++,
-      x: 50,
-      y: 480,
-      width: 100,
-      height: 30,
-      label: 'ENTRANCE',
-      type: 'table'
-    });
-    
-    setSeats(newSeats);
-  };
+  }
+  
+  // Bottom area - 3 horizontal rows
+  for (let row = 0; row < 3; row++) {
+    for (let seat = 0; seat < 8; seat++) {
+      newSeats.push({
+        id: id++,
+        x: 300 + seat * 50,
+        y: 380 + row * 40,
+        width: 40,
+        height: 20,
+        label: '',
+        type: 'seat'
+      });
+    }
+  }
+  
+  // Table (top center)
+  newSeats.push({
+    id: id++,
+    x: 450,
+    y: 80,
+    width: 80,
+    height: 30,
+    label: 'Table',
+    type: 'table'
+  });
+  
+  // Entrance (bottom left)
+  newSeats.push({
+    id: id++,
+    x: 50,
+    y: 520,
+    width: 100,
+    height: 40,
+    label: 'ENTRANCE',
+    type: 'table'
+  });
+  
+  // Table (bottom right)
+  newSeats.push({
+    id: id++,
+    x: 670,
+    y: 520,
+    width: 90,
+    height: 40,
+    label: 'Table',
+    type: 'table'
+  });
+  
+  setSeats(newSeats);
+};
 
   // Generate printable PDF with improved layout
   const generatePDF = () => {
