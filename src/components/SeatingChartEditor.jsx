@@ -238,7 +238,7 @@ const handleItemSelect = (e, item) => {
     if (e.button === 1 || (e.button === 0 && e.shiftKey)) {
       e.preventDefault();
       setIsPanning(true);
-    } else if (e.button === 0 && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+    } else if (e.button === 0 && !e.ctrlKey && !e.metaKey && !e.shiftKey && e.target === canvasRef.current) {
       startSelection(e);
     }
   };
