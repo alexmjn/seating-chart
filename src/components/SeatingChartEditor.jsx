@@ -102,6 +102,7 @@ const SeatingChartEditor = () => {
 
   // Handle canvas click (deselect all or start selection)
   const handleCanvasClick = (e) => {
+    console.log('handleCanvasClick called, clearing selection');
     if (isDragging || isResizing || isPanning || editingLabel) return;
 
     // Don't clear selection if we just finished a selection drag
@@ -201,7 +202,8 @@ const SeatingChartEditor = () => {
             seat.y + seat.height > newBox.y;
         }).map(seat => seat.id);
 
-        setTempSelection(selectedIds);
+        setSelectedSeats(selectedIds); // Back to direct update for visual feedback
+        setTempSelection(selectedIds); // Also store in temp for later
       }
     } else if (isDragging && selectedSeats.length > 0) {
       const deltaX = coords.x - dragStartPos.x;
@@ -232,6 +234,7 @@ const SeatingChartEditor = () => {
   // Stop dragging/resizing/panning/selecting
   // Stop dragging/resizing/panning/selecting
   const stopInteraction = () => {
+    console.log('stopInteraction called, tempSelection:', tempSelection);
     setIsDragging(false);
     setIsResizing(false);
     setIsPanning(false);
