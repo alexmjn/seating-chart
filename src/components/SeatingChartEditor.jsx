@@ -188,14 +188,16 @@ const handleItemSelect = (e, item) => {
       };
       setSelectionBox(newBox);
       
-      const selectedIds = seats.filter(seat => {
-        return seat.x < newBox.x + newBox.width && 
-              seat.x + seat.width > newBox.x &&
-              seat.y < newBox.y + newBox.height && 
-              seat.y + seat.height > newBox.y;
-      }).map(seat => seat.id);
+  if (newBox.width > 5 && newBox.height > 5) {
+    const selectedIds = seats.filter(seat => {
+      return seat.x < newBox.x + newBox.width && 
+            seat.x + seat.width > newBox.x &&
+            seat.y < newBox.y + newBox.height && 
+            seat.y + seat.height > newBox.y;
+    }).map(seat => seat.id);
 
       setSelectedSeats(selectedIds);
+  }
     } else if (isDragging && selectedSeats.length > 0) {
       const deltaX = coords.x - dragStartPos.x;
       const deltaY = coords.y - dragStartPos.y;
@@ -401,139 +403,138 @@ const handleItemSelect = (e, item) => {
   };
 
   // Create template matching the uploaded image (enhanced)
-  // Create template matching the hand-drawn diagram
-// Create template matching the hand-drawn diagram
-const createUploadedTemplate = () => {
-  const newSeats = [];
-  let id = Date.now();
-  
-  // Left side - back row (8 seats, spread out)
-  for (let i = 0; i < 8; i++) {
-    newSeats.push({
-      id: id++,
-      x: 50 + i * 25,
-      y: 60,
-      width: 40,
-      height: 20,
-      label: '',
-      type: 'seat'
-    });
-  }
-  
-  // Left side - front 4 columns (11 seats each)
-  for (let col = 0; col < 4; col++) {
-    for (let row = 0; row < 11; row++) {
+  const createUploadedTemplate = () => {
+    const newSeats = [];
+    let id = Date.now();
+    
+    // Left side - back row (8 seats, spread out)
+    for (let i = 0; i < 8; i++) {
       newSeats.push({
         id: id++,
-        x: 50 + col * 50,
-        y: 95 + row * 32,
+        x: 50 + i * 25,
+        y: 80, // Moved down from title
         width: 40,
         height: 20,
         label: '',
         type: 'seat'
       });
     }
-  }
-  
-  // Top horizontal row (8 seats)
-  for (let i = 0; i < 8; i++) {
-    newSeats.push({
-      id: id++,
-      x: 320 + i * 50,
-      y: 40,
-      width: 40,
-      height: 20,
-      label: '',
-      type: 'seat'
-    });
-  }
-  
-  // Center area - 4 rows in front of table (5 seats each, shorter width)
-  for (let row = 0; row < 4; row++) {
-    for (let seat = 0; seat < 5; seat++) {
+    
+    // Left side - front 4 columns (11 seats each, better vertical spread)
+    for (let col = 0; col < 4; col++) {
+      for (let row = 0; row < 11; row++) {
+        newSeats.push({
+          id: id++,
+          x: 50 + col * 50,
+          y: 120 + row * 40, // More vertical spacing
+          width: 40,
+          height: 20,
+          label: '',
+          type: 'seat'
+        });
+      }
+    }
+    
+    // Top horizontal row (8 seats) - moved down
+    for (let i = 0; i < 8; i++) {
       newSeats.push({
         id: id++,
-        x: 370 + seat * 50,
-        y: 120 + row * 35,
+        x: 320 + i * 50,
+        y: 80,
         width: 40,
         height: 20,
         label: '',
         type: 'seat'
       });
     }
-  }
-  
-  // Bottom area - 3 rows (8 seats each, full width, extending under entrance)
-  for (let row = 0; row < 3; row++) {
-    for (let seat = 0; seat < 8; seat++) {
+    
+    // Center area - 4 rows (5 seats each, better spacing)
+    for (let row = 0; row < 4; row++) {
+      for (let seat = 0; seat < 5; seat++) {
+        newSeats.push({
+          id: id++,
+          x: 370 + seat * 50,
+          y: 160 + row * 45, // More spread
+          width: 40,
+          height: 20,
+          label: '',
+          type: 'seat'
+        });
+      }
+    }
+    
+    // Bottom area - 3 rows (8 seats each, pushed down)
+    for (let row = 0; row < 3; row++) {
+      for (let seat = 0; seat < 8; seat++) {
+        newSeats.push({
+          id: id++,
+          x: 320 + seat * 50,
+          y: 380 + row * 45, // More vertical spread
+          width: 40,
+          height: 20,
+          label: '',
+          type: 'seat'
+        });
+      }
+    }
+    
+    // Right side vertical column (12 seats, better spacing)
+    for (let row = 0; row < 12; row++) {
       newSeats.push({
         id: id++,
-        x: 320 + seat * 50,
-        y: 300 + row * 35,
+        x: 750,
+        y: 80 + row * 40, // Better vertical distribution
         width: 40,
         height: 20,
         label: '',
         type: 'seat'
       });
     }
-  }
-  
-  // Right side vertical column (12 seats)
-  for (let row = 0; row < 12; row++) {
+    
+    // Table (top center) - moved down
     newSeats.push({
       id: id++,
-      x: 750,
-      y: 60 + row * 35,
-      width: 40,
-      height: 20,
-      label: '',
-      type: 'seat'
+      x: 480,
+      y: 120,
+      width: 80,
+      height: 30,
+      label: 'Table',
+      type: 'table'
     });
-  }
-  
-  // Table (top center)
-  newSeats.push({
-    id: id++,
-    x: 480,
-    y: 80,
-    width: 80,
-    height: 30,
-    label: 'Table',
-    type: 'table'
-  });
-  
-  // Entrance (bottom left)
-  newSeats.push({
-    id: id++,
-    x: 50,
-    y: 420,
-    width: 100,
-    height: 40,
-    label: 'ENTRANCE',
-    type: 'table'
-  });
-  
-  // Table (bottom right)
-  newSeats.push({
-    id: id++,
-    x: 720,
-    y: 420,
-    width: 70,
-    height: 40,
-    label: 'Table',
-    type: 'table'
-  });
-  
-  setSeats(newSeats);
-};
+    
+    // Entrance (bottom left) - pushed down
+    newSeats.push({
+      id: id++,
+      x: 50,
+      y: 520,
+      width: 100,
+      height: 40,
+      label: 'ENTRANCE',
+      type: 'table'
+    });
+    
+    // Table (bottom right) - pushed down
+    newSeats.push({
+      id: id++,
+      x: 720,
+      y: 520,
+      width: 70,
+      height: 40,
+      label: 'Table',
+      type: 'table'
+    });
+    
+    setSeats(newSeats);
+  };
 
+  // Generate printable PDF with improved layout
   // Generate printable PDF with improved layout
   const generatePDF = () => {
     if (seats.length === 0) return;
     
     const printWindow = window.open('', '_blank');
     
-    const padding = 40;
+    const padding = 60; // More padding for title space
     const minX = Math.min(...seats.map(s => s.x)) - padding;
     const maxX = Math.max(...seats.map(s => s.x + s.width)) + padding;
     const minY = Math.min(...seats.map(s => s.y)) - padding;
@@ -541,15 +542,15 @@ const createUploadedTemplate = () => {
     const chartWidth = maxX - minX;
     const chartHeight = maxY - minY;
     
-    const pageWidth = 1200; // wider for landscape
-    const shareListWidth = 150; // narrower share column
-    const margin = 30; // smaller margins
+    const pageWidth = 1200;
+    const shareListWidth = 120; // Even narrower
+    const margin = 25;
     const availableWidth = pageWidth - shareListWidth - (margin * 3);
-    const availableHeight = 800; // taller for landscape
+    const availableHeight = 750;
     
     const scaleX = availableWidth / chartWidth;
     const scaleY = availableHeight / chartHeight;
-    const scale = Math.min(scaleX, scaleY, 1.2);
+    const scale = Math.min(scaleX, scaleY, 1.5); // Allow more scaling
     
     const scaledWidth = chartWidth * scale;
     const scaledHeight = chartHeight * scale;
@@ -569,13 +570,13 @@ const createUploadedTemplate = () => {
           .seat { fill: #e5e7eb; stroke: #6b7280; stroke-width: 2; }
           .furniture { stroke: #374151; stroke-width: 2; }
           .seat-text { font-family: Arial, sans-serif; font-size: 10px; text-anchor: middle; fill: #374151; }
-          .title { font-family: Arial, sans-serif; font-size: 18px; font-weight: bold; text-anchor: middle; fill: #1f2937; }
-          .subtitle { font-family: Arial, sans-serif; font-size: 12px; text-anchor: middle; fill: #374151; }
-          .name-line { font-family: Arial, sans-serif; font-size: 8px; text-anchor: middle; fill: #666; }
+          .title { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; text-anchor: middle; fill: #1f2937; }
+          .subtitle { font-family: Arial, sans-serif; font-size: 11px; text-anchor: middle; fill: #374151; }
+          .name-line { font-family: Arial, sans-serif; font-size: 7px; text-anchor: middle; fill: #666; }
         </style>
         
-        <text x="${minX + chartWidth/2}" y="${minY + 25}" class="title">AA Meeting Seating Chart</text>
-        <text x="${minX + chartWidth/2}" y="${minY + 45}" class="subtitle">Date: _____________ Meeting: _____________</text>
+        <text x="${minX + chartWidth/2}" y="${minY + 20}" class="title">AA Meeting Seating Chart</text>
+        <text x="${minX + chartWidth/2}" y="${minY + 35}" class="subtitle">Date: _____________ Meeting: _____________</text>
         
         ${seats.map((seat, index) => `
           <rect x="${seat.x}" y="${seat.y}" width="${seat.width}" height="${seat.height}" 
@@ -585,15 +586,13 @@ const createUploadedTemplate = () => {
             ${seat.label || (seat.type === 'seat' ? '' : seat.type)}
           </text>
           ${seat.type === 'seat' && !seat.label ? `
-            <text x="${seat.x + seat.width/2}" y="${seat.y - 10}" class="name-line">
-              ___________
+            <text x="${seat.x + seat.width/2}" y="${seat.y - 8}" class="name-line">
+              _______
             </text>
           ` : ''}
         `).join('')}
       </svg>
     `;
-    
-    const seatCount = seats.filter(s => s.type === 'seat').length;
     
     const htmlContent = `
       <!DOCTYPE html>
@@ -601,34 +600,32 @@ const createUploadedTemplate = () => {
         <head>
           <title>AA Meeting Seating Chart</title>
           <style>
+            @page { size: landscape; margin: 0.5in; }
             body { 
               margin: 0; 
               padding: ${margin}px; 
               font-family: Arial, sans-serif; 
               background: white; 
               width: ${pageWidth}px;
+              height: 100vh;
             }
             .container { 
               display: flex; 
               gap: ${margin}px; 
               width: 100%;
-              height: auto;
+              height: 100%;
             }
             .chart-section { 
               flex: 1; 
               display: flex;
               flex-direction: column;
-              justify-content: flex-start;
-            }
-            .chart-wrapper {
-              display: flex;
               justify-content: center;
-              align-items: flex-start;
+              align-items: center;
             }
             .share-section { 
               width: ${shareListWidth}px; 
               border-left: 2px solid #ccc; 
-              padding-left: ${margin/2}px; 
+              padding-left: 15px; 
               flex-shrink: 0;
             }
             .share-list { 
@@ -638,24 +635,18 @@ const createUploadedTemplate = () => {
             }
             .share-list li { 
               border-bottom: 1px solid #ddd; 
-              padding: 8px 0; // tighter spacing
-              font-size: 12px; // smaller font
+              padding: 4px 0;
+              font-size: 10px;
             }
             h3 { 
               margin-top: 0; 
               color: #1f2937; 
               border-bottom: 2px solid #1f2937; 
-              padding-bottom: 8px;
-              font-size: 18px;
-            }
-            .note { 
-              font-size: 12px; 
-              color: #666; 
-              margin-top: 20px; 
-              text-align: center;
+              padding-bottom: 5px;
+              font-size: 14px;
             }
             @media print { 
-              body { margin: 0; padding: 20px; } 
+              body { margin: 0; padding: 15px; } 
               .container { page-break-inside: avoid; }
             }
           </style>
@@ -663,15 +654,13 @@ const createUploadedTemplate = () => {
         <body>
           <div class="container">
             <div class="chart-section">
-              <div class="chart-wrapper">
-                ${svgContent}
-              </div>
+              ${svgContent}
             </div>
             <div class="share-section">
               <h3>Share</h3>
               <ul class="share-list">
                 ${Array.from({length: 20}, (_, i) => 
-                  `<li>${i + 1}. _________________________</li>`
+                  `<li>${i + 1}. _______________</li>`
                 ).join('')}
               </ul>
             </div>
