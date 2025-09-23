@@ -821,18 +821,35 @@ const handleItemSelect = (e, item) => {
                 return (
                   <g key={item.id}>
                     {/* Main rectangle */}
-                    <rect
-                      x={item.x}
-                      y={item.y}
-                      width={item.width}
-                      height={item.height}
-                      fill={getItemColor(item, isSelected)}
-                      stroke={isSelected ? "#1d4ed8" : "#6b7280"}
-                      strokeWidth={isSelected ? "3" : "2"}
-                      rx="3"
-                      className="cursor-move hover:opacity-80"
-                      onMouseDown={(e) => startDrag(e, item)}
-                      onClick={(e) => handleItemSelect(e, item)}
+                  <rect
+                    x={item.x}
+                    y={item.y}
+                    width={item.width}
+                    height={item.height}
+                    fill={getItemColor(item, isSelected)}
+                    stroke={isSelected ? "#1d4ed8" : "#6b7280"}
+                    strokeWidth={isSelected ? "3" : "2"}
+                    rx="3"
+                    className="cursor-move hover:opacity-80"
+                    onMouseDown={(e) => {
+                      if (e.ctrlKey || e.metaKey) {
+                        // For Ctrl+click, handle selection immediately in mousedown
+                        e.stopPropagation();
+                        e.preventDefault();
+                        if (selectedSeats.includes(item.id)) {
+                          setSelectedSeats(prev => prev.filter(id => id !== item.id));
+                        } else {
+                          setSelectedSeats(prev => [...prev, item.id]);
+                        }
+                      } else {
+                        startDrag(e, item);
+                      }
+                    }}
+                    onClick={(e) => {
+                      if (!(e.ctrlKey || e.metaKey)) {
+                        handleItemSelect(e, item);
+                      }
+                    }}
                       onContextMenu={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
