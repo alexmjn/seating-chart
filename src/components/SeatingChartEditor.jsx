@@ -16,6 +16,7 @@ const SeatingChartEditor = () => {
   const [selectionBox, setSelectionBox] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
+  const [tempSelection, setTempSelection] = useState([]);
 
   // Prevent context menu on canvas
   useEffect(() => {
@@ -200,7 +201,7 @@ const SeatingChartEditor = () => {
             seat.y + seat.height > newBox.y;
         }).map(seat => seat.id);
 
-        setSelectedSeats(selectedIds);
+        setTempSelection(selectedIds);
       }
     } else if (isDragging && selectedSeats.length > 0) {
       const deltaX = coords.x - dragStartPos.x;
@@ -229,12 +230,20 @@ const SeatingChartEditor = () => {
   };
 
   // Stop dragging/resizing/panning/selecting
+  // Stop dragging/resizing/panning/selecting
   const stopInteraction = () => {
     setIsDragging(false);
     setIsResizing(false);
     setIsPanning(false);
+
+    // Commit temp selection to actual selection when finishing selection drag
+    if (isSelecting && tempSelection.length > 0) {
+      setSelectedSeats(tempSelection);
+    }
+
     setIsSelecting(false);
     setSelectionBox({ x: 0, y: 0, width: 0, height: 0 });
+    setTempSelection([]);
   };
 
   // Start panning
@@ -793,9 +802,10 @@ const SeatingChartEditor = () => {
           </div>
 
           <div className="text-sm text-gray-600">
-            <p>• Double-click empty space to add seats • Drag empty space to select multiple • Ctrl+click for multi-select • Right-click to delete</p>
-            <p>• Mouse wheel: scroll • Ctrl+wheel: zoom • Shift+click: pan • Double-click item: edit label • Drag corner to resize • Delete key: remove selected</p>
-            <p>• Selected: {selectedSeats.length} items • Zoom: {Math.round(zoom * 100)}% • Orient: align and distribute selected items evenly</p>
+            <p>• Double-click empty space: add seats • Drag empty space: select multiple • Ctrl+click: multi-select toggle</p>
+            <p>• Mouse wheel: scroll • Ctrl+wheel: zoom • Shift+drag: pan • Right-click: delete • Drag corner: resize</p>
+            <p>• Double-click item: edit label • Delete key: remove selected • Orient: align and distribute evenly</p>
+            <p>• Selected: {selectedSeats.length} items • Zoom: {Math.round(zoom * 100)}%</p>
           </div>
         </div>
 
