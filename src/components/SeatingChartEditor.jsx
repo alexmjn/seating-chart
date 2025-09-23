@@ -47,21 +47,21 @@ const SeatingChartEditor = () => {
   // Handle mouse wheel for zooming and scrolling
   const handleWheel = (e) => {
     e.preventDefault();
-    
+
     if (e.ctrlKey || e.metaKey) {
       const rect = canvasRef.current.getBoundingClientRect();
       const mouseX = e.clientX - rect.left;
       const mouseY = e.clientY - rect.top;
-      
+
       const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
       const newZoom = Math.max(0.1, Math.min(3, zoom * zoomFactor));
-      
+
       const zoomChange = newZoom / zoom;
       setPan({
         x: mouseX - (mouseX - pan.x) * zoomChange,
         y: mouseY - (mouseY - pan.y) * zoomChange
       });
-      
+
       setZoom(newZoom);
     } else {
       setPan({
@@ -83,19 +83,19 @@ const SeatingChartEditor = () => {
   // Add a new seat at double-clicked position
   const addSeat = (e) => {
     if (isDragging || isResizing || isPanning || editingLabel || isSelecting) return;
-    
+
     const coords = screenToCanvas(e.clientX, e.clientY);
-    
+
     const newSeat = {
       id: Date.now(),
       x: coords.x,
       y: coords.y,
       width: 40,
-      height: 20,
+      height: 10,
       label: '',
       type: 'seat'
     };
-    
+
     setSeats([...seats, newSeat]);
   };
 
@@ -111,7 +111,7 @@ const SeatingChartEditor = () => {
   const startSelection = (e) => {
     if (e.ctrlKey || e.metaKey || e.shiftKey) return;
     if (isDragging || isResizing || isPanning || editingLabel) return;
-    
+
     const coords = screenToCanvas(e.clientX, e.clientY);
     setIsSelecting(true);
     setSelectionBox({ x: coords.x, y: coords.y, width: 0, height: 0 });
@@ -119,34 +119,34 @@ const SeatingChartEditor = () => {
   };
 
   // Handle item selection with multi-select support
-// Handle item selection with multi-select support
-const handleItemSelect = (e, item) => {
-  e.stopPropagation();
-  e.preventDefault();
-  
-  if (e.ctrlKey || e.metaKey) {
-    // Multi-select: toggle this item
-    setSelectedSeats(prev => {
-      if (prev.includes(item.id)) {
-        return prev.filter(id => id !== item.id);
-      } else {
-        return [...prev, item.id];
-      }
-    });
-  } else {
-    // Single select: select only this item
-    setSelectedSeats([item.id]);
-  }
-};
+  // Handle item selection with multi-select support
+  const handleItemSelect = (e, item) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    if (e.ctrlKey || e.metaKey) {
+      // Multi-select: toggle this item
+      setSelectedSeats(prev => {
+        if (prev.includes(item.id)) {
+          return prev.filter(id => id !== item.id);
+        } else {
+          return [...prev, item.id];
+        }
+      });
+    } else {
+      // Single select: select only this item
+      setSelectedSeats([item.id]);
+    }
+  };
 
   // Start dragging items
   const startDrag = (e, item) => {
     e.stopPropagation();
     e.preventDefault();
-    
+
     const coords = screenToCanvas(e.clientX, e.clientY);
     setDragStartPos(coords);
-    
+
     if (!selectedSeats.includes(item.id)) {
       if (e.ctrlKey || e.metaKey) {
         setSelectedSeats(prev => [...prev, item.id]);
@@ -154,7 +154,7 @@ const handleItemSelect = (e, item) => {
         setSelectedSeats([item.id]);
       }
     }
-    
+
     setIsDragging(true);
     setDragOffset({
       x: coords.x - item.x,
@@ -173,7 +173,7 @@ const handleItemSelect = (e, item) => {
   // Handle mouse move for dragging, resizing, selecting, and panning
   const handleMouseMove = (e) => {
     const coords = screenToCanvas(e.clientX, e.clientY);
-    
+
     if (isPanning) {
       setPan({
         x: pan.x + e.movementX,
@@ -187,35 +187,35 @@ const handleItemSelect = (e, item) => {
         height: Math.abs(coords.y - dragStartPos.y)
       };
       setSelectionBox(newBox);
-      
-  if (newBox.width > 5 && newBox.height > 5) {
-    const selectedIds = seats.filter(seat => {
-      return seat.x < newBox.x + newBox.width && 
-            seat.x + seat.width > newBox.x &&
-            seat.y < newBox.y + newBox.height && 
-            seat.y + seat.height > newBox.y;
-    }).map(seat => seat.id);
 
-      setSelectedSeats(selectedIds);
-  }
+      if (newBox.width > 5 && newBox.height > 5) {
+        const selectedIds = seats.filter(seat => {
+          return seat.x < newBox.x + newBox.width &&
+            seat.x + seat.width > newBox.x &&
+            seat.y < newBox.y + newBox.height &&
+            seat.y + seat.height > newBox.y;
+        }).map(seat => seat.id);
+
+        setSelectedSeats(selectedIds);
+      }
     } else if (isDragging && selectedSeats.length > 0) {
       const deltaX = coords.x - dragStartPos.x;
       const deltaY = coords.y - dragStartPos.y;
-      
-      setSeats(seats.map(seat => 
+
+      setSeats(seats.map(seat =>
         selectedSeats.includes(seat.id)
           ? { ...seat, x: seat.x + deltaX, y: seat.y + deltaY }
           : seat
       ));
-      
+
       setDragStartPos(coords);
     } else if (isResizing && selectedSeats.length === 1) {
       const selectedSeatData = seats.find(s => s.id === selectedSeats[0]);
       if (selectedSeatData) {
         const newWidth = Math.max(20, coords.x - selectedSeatData.x);
         const newHeight = Math.max(15, coords.y - selectedSeatData.y);
-        
-        setSeats(seats.map(seat => 
+
+        setSeats(seats.map(seat =>
           seat.id === selectedSeats[0]
             ? { ...seat, width: newWidth, height: newHeight }
             : seat
@@ -238,7 +238,7 @@ const handleItemSelect = (e, item) => {
     if (e.button === 1 || (e.button === 0 && e.shiftKey)) {
       e.preventDefault();
       setIsPanning(true);
-    } else if (e.button === 0 && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+    } else if (e.button === 0 && !e.ctrlKey && !e.metaKey && !e.shiftKey && !isSelecting) {
       // Start selection if not clicking on any modifier keys
       // The SVG rect elements will stop propagation, so this only fires on empty space
       startSelection(e);
@@ -248,25 +248,25 @@ const handleItemSelect = (e, item) => {
   // Orient selected items - align and distribute evenly
   const orientSelectedItems = () => {
     if (selectedSeats.length < 2) return;
-    
+
     const selectedItems = seats.filter(s => selectedSeats.includes(s.id));
-    
+
     // Calculate the spread to determine orientation
     const xPositions = selectedItems.map(s => s.x + s.width / 2);
     const yPositions = selectedItems.map(s => s.y + s.height / 2);
     const xSpread = Math.max(...xPositions) - Math.min(...xPositions);
     const ySpread = Math.max(...yPositions) - Math.min(...yPositions);
-    
+
     if (xSpread > ySpread) {
       // Horizontal alignment - align Y, distribute X evenly
       const avgY = yPositions.reduce((sum, y) => sum + y, 0) / yPositions.length;
       const minX = Math.min(...xPositions);
       const maxX = Math.max(...xPositions);
       const spacing = selectedItems.length > 1 ? (maxX - minX) / (selectedItems.length - 1) : 0;
-      
+
       // Sort by current X position and redistribute
       const sortedItems = selectedItems.sort((a, b) => (a.x + a.width / 2) - (b.x + b.width / 2));
-      
+
       setSeats(seats.map(seat => {
         const itemIndex = sortedItems.findIndex(s => s.id === seat.id);
         if (itemIndex !== -1) {
@@ -285,10 +285,10 @@ const handleItemSelect = (e, item) => {
       const minY = Math.min(...yPositions);
       const maxY = Math.max(...yPositions);
       const spacing = selectedItems.length > 1 ? (maxY - minY) / (selectedItems.length - 1) : 0;
-      
+
       // Sort by current Y position and redistribute
       const sortedItems = selectedItems.sort((a, b) => (a.y + a.height / 2) - (b.y + b.height / 2));
-      
+
       setSeats(seats.map(seat => {
         const itemIndex = sortedItems.findIndex(s => s.id === seat.id);
         if (itemIndex !== -1) {
@@ -320,12 +320,12 @@ const handleItemSelect = (e, item) => {
   const toggleFullscreen = () => {
     if (!isFullscreen) {
       containerRef.current?.requestFullscreen?.() ||
-      containerRef.current?.webkitRequestFullscreen?.() ||
-      containerRef.current?.mozRequestFullScreen?.();
+        containerRef.current?.webkitRequestFullscreen?.() ||
+        containerRef.current?.mozRequestFullScreen?.();
     } else {
       document.exitFullscreen?.() ||
-      document.webkitExitFullscreen?.() ||
-      document.mozCancelFullScreen?.();
+        document.webkitExitFullscreen?.() ||
+        document.mozCancelFullScreen?.();
     }
     setIsFullscreen(!isFullscreen);
   };
@@ -337,7 +337,7 @@ const handleItemSelect = (e, item) => {
     const seatWidth = 40;
     const spacing = 10;
     const seatsInRow = 8;
-    
+
     const newSeats = [];
     for (let i = 0; i < seatsInRow; i++) {
       newSeats.push({
@@ -345,12 +345,12 @@ const handleItemSelect = (e, item) => {
         x: startX + i * (seatWidth + spacing),
         y: startY,
         width: 40,
-        height: 20,
+        height: 10,
         label: '',
         type: 'seat'
       });
     }
-    
+
     setSeats([...seats, ...newSeats]);
   };
 
@@ -361,7 +361,7 @@ const handleItemSelect = (e, item) => {
     const seatHeight = 40;
     const spacing = 10;
     const seatsInRow = 6;
-    
+
     const newSeats = [];
     for (let i = 0; i < seatsInRow; i++) {
       newSeats.push({
@@ -369,12 +369,12 @@ const handleItemSelect = (e, item) => {
         x: startX,
         y: startY + i * (seatHeight + spacing),
         width: 40,
-        height: 20,
+        height: 10,
         label: '',
         type: 'seat'
       });
     }
-    
+
     setSeats([...seats, ...newSeats]);
   };
 
@@ -384,7 +384,7 @@ const handleItemSelect = (e, item) => {
     const centerY = 200;
     const radius = 100;
     const seatCount = 12;
-    
+
     const newSeats = [];
     for (let i = 0; i < seatCount; i++) {
       const angle = (i * 2 * Math.PI) / seatCount;
@@ -393,12 +393,12 @@ const handleItemSelect = (e, item) => {
         x: centerX + radius * Math.cos(angle) - 20,
         y: centerY + radius * Math.sin(angle) - 10,
         width: 40,
-        height: 20,
+        height: 10,
         label: '',
         type: 'seat'
       });
     }
-    
+
     setSeats([...seats, ...newSeats]);
   };
 
@@ -406,7 +406,7 @@ const handleItemSelect = (e, item) => {
   const createUploadedTemplate = () => {
     const newSeats = [];
     let id = Date.now();
-    
+
     // Left side - back row (8 seats, spread out)
     for (let i = 0; i < 8; i++) {
       newSeats.push({
@@ -414,12 +414,12 @@ const handleItemSelect = (e, item) => {
         x: 50 + i * 25,
         y: 80, // Moved down from title
         width: 40,
-        height: 20,
+        height: 10,
         label: '',
         type: 'seat'
       });
     }
-    
+
     // Left side - front 4 columns (11 seats each, better vertical spread)
     for (let col = 0; col < 4; col++) {
       for (let row = 0; row < 11; row++) {
@@ -428,13 +428,13 @@ const handleItemSelect = (e, item) => {
           x: 50 + col * 50,
           y: 120 + row * 40, // More vertical spacing
           width: 40,
-          height: 20,
+          height: 10,
           label: '',
           type: 'seat'
         });
       }
     }
-    
+
     // Top horizontal row (8 seats) - moved down
     for (let i = 0; i < 8; i++) {
       newSeats.push({
@@ -442,12 +442,12 @@ const handleItemSelect = (e, item) => {
         x: 320 + i * 50,
         y: 80,
         width: 40,
-        height: 20,
+        height: 10,
         label: '',
         type: 'seat'
       });
     }
-    
+
     // Center area - 4 rows (5 seats each, better spacing)
     for (let row = 0; row < 4; row++) {
       for (let seat = 0; seat < 5; seat++) {
@@ -456,13 +456,13 @@ const handleItemSelect = (e, item) => {
           x: 370 + seat * 50,
           y: 160 + row * 45, // More spread
           width: 40,
-          height: 20,
+          height: 10,
           label: '',
           type: 'seat'
         });
       }
     }
-    
+
     // Bottom area - 3 rows (8 seats each, pushed down)
     for (let row = 0; row < 3; row++) {
       for (let seat = 0; seat < 8; seat++) {
@@ -471,13 +471,13 @@ const handleItemSelect = (e, item) => {
           x: 320 + seat * 50,
           y: 380 + row * 45, // More vertical spread
           width: 40,
-          height: 20,
+          height: 10,
           label: '',
           type: 'seat'
         });
       }
     }
-    
+
     // Right side vertical column (12 seats, better spacing)
     for (let row = 0; row < 12; row++) {
       newSeats.push({
@@ -485,12 +485,12 @@ const handleItemSelect = (e, item) => {
         x: 750,
         y: 80 + row * 40, // Better vertical distribution
         width: 40,
-        height: 20,
+        height: 10,
         label: '',
         type: 'seat'
       });
     }
-    
+
     // Table (top center) - moved down
     newSeats.push({
       id: id++,
@@ -501,7 +501,7 @@ const handleItemSelect = (e, item) => {
       label: 'Table',
       type: 'table'
     });
-    
+
     // Entrance (bottom left) - pushed down
     newSeats.push({
       id: id++,
@@ -512,7 +512,7 @@ const handleItemSelect = (e, item) => {
       label: 'ENTRANCE',
       type: 'table'
     });
-    
+
     // Table (bottom right) - pushed down
     newSeats.push({
       id: id++,
@@ -523,7 +523,7 @@ const handleItemSelect = (e, item) => {
       label: 'Table',
       type: 'table'
     });
-    
+
     setSeats(newSeats);
   };
 
@@ -531,9 +531,9 @@ const handleItemSelect = (e, item) => {
   // Generate printable PDF with improved layout
   const generatePDF = () => {
     if (seats.length === 0) return;
-    
+
     const printWindow = window.open('', '_blank');
-    
+
     const padding = 60; // More padding for title space
     const minX = Math.min(...seats.map(s => s.x)) - padding;
     const maxX = Math.max(...seats.map(s => s.x + s.width)) + padding;
@@ -541,29 +541,29 @@ const handleItemSelect = (e, item) => {
     const maxY = Math.max(...seats.map(s => s.y + s.height)) + padding;
     const chartWidth = maxX - minX;
     const chartHeight = maxY - minY;
-    
+
     const pageWidth = 1200;
     const shareListWidth = 120; // Even narrower
     const margin = 25;
     const availableWidth = pageWidth - shareListWidth - (margin * 3);
     const availableHeight = 750;
-    
+
     const scaleX = availableWidth / chartWidth;
     const scaleY = availableHeight / chartHeight;
     const scale = Math.min(scaleX, scaleY, 1.5); // Allow more scaling
-    
+
     const scaledWidth = chartWidth * scale;
     const scaledHeight = chartHeight * scale;
-    
+
     const getItemColor = (type) => {
-      switch(type) {
+      switch (type) {
         case 'couch': return '#8b5cf6';
         case 'table': return '#10b981';
         case 'coffee_table': return '#f59e0b';
         default: return '#e5e7eb';
       }
     };
-    
+
     const svgContent = `
       <svg width="${scaledWidth}" height="${scaledHeight}" viewBox="${minX} ${minY} ${chartWidth} ${chartHeight}" xmlns="http://www.w3.org/2000/svg">
         <style>
@@ -575,25 +575,25 @@ const handleItemSelect = (e, item) => {
           .name-line { font-family: Arial, sans-serif; font-size: 7px; text-anchor: middle; fill: #666; }
         </style>
         
-        <text x="${minX + chartWidth/2}" y="${minY + 20}" class="title">AA Meeting Seating Chart</text>
-        <text x="${minX + chartWidth/2}" y="${minY + 35}" class="subtitle">Date: _____________ Meeting: _____________</text>
+        <text x="${minX + chartWidth / 2}" y="${minY + 20}" class="title">AA Meeting Seating Chart</text>
+        <text x="${minX + chartWidth / 2}" y="${minY + 35}" class="subtitle">Date: _____________ Meeting: _____________</text>
         
         ${seats.map((seat, index) => `
           <rect x="${seat.x}" y="${seat.y}" width="${seat.width}" height="${seat.height}" 
                 rx="3" class="${seat.type === 'seat' ? 'seat' : 'furniture'}" 
                 fill="${getItemColor(seat.type)}"/>
-          <text x="${seat.x + seat.width/2}" y="${seat.y + seat.height/2 + 3}" class="seat-text">
+          <text x="${seat.x + seat.width / 2}" y="${seat.y + seat.height / 2 + 3}" class="seat-text">
             ${seat.label || (seat.type === 'seat' ? '' : seat.type)}
           </text>
           ${seat.type === 'seat' && !seat.label ? `
-            <text x="${seat.x + seat.width/2}" y="${seat.y - 8}" class="name-line">
+            <text x="${seat.x + seat.width / 2}" y="${seat.y - 8}" class="name-line">
               _______
             </text>
           ` : ''}
         `).join('')}
       </svg>
     `;
-    
+
     const htmlContent = `
       <!DOCTYPE html>
       <html>
@@ -635,15 +635,15 @@ const handleItemSelect = (e, item) => {
             }
             .share-list li { 
               border-bottom: 1px solid #ddd; 
-              padding: 4px 0;
-              font-size: 10px;
+              padding: 6px 0;  // Less compressed
+              font-size: 11px; // Slightly larger
             }
             h3 { 
               margin-top: 0; 
               color: #1f2937; 
               border-bottom: 2px solid #1f2937; 
               padding-bottom: 5px;
-              font-size: 14px;
+              font-size: 15px; // Slightly larger
             }
             @media print { 
               body { margin: 0; padding: 15px; } 
@@ -659,9 +659,9 @@ const handleItemSelect = (e, item) => {
             <div class="share-section">
               <h3>Share</h3>
               <ul class="share-list">
-                ${Array.from({length: 20}, (_, i) => 
-                  `<li>${i + 1}. _______________</li>`
-                ).join('')}
+                ${Array.from({ length: 20 }, (_, i) =>
+      `<li>${i + 1}. _______________</li>`
+    ).join('')}
               </ul>
             </div>
           </div>
@@ -669,7 +669,7 @@ const handleItemSelect = (e, item) => {
         </body>
       </html>
     `;
-    
+
     printWindow.document.write(htmlContent);
     printWindow.document.close();
   };
@@ -681,7 +681,7 @@ const handleItemSelect = (e, item) => {
       seats: seats,
       created: new Date().toISOString()
     };
-    
+
     const blob = new Blob([JSON.stringify(template, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -696,7 +696,7 @@ const handleItemSelect = (e, item) => {
   const loadTemplate = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    
+
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
@@ -722,7 +722,7 @@ const handleItemSelect = (e, item) => {
   // Get item color for display
   const getItemColor = (item, isSelected) => {
     if (isSelected) return "#3b82f6";
-    switch(item.type) {
+    switch (item.type) {
       case 'couch': return '#8b5cf6';
       case 'table': return '#10b981';
       case 'coffee_table': return '#f59e0b';
@@ -744,7 +744,7 @@ const handleItemSelect = (e, item) => {
               {isFullscreen ? '⤓ Exit Fullscreen' : '⤢ Fullscreen'}
             </button>
           </div>
-          
+
           {/* Controls */}
           <div className="flex flex-wrap gap-2 mb-2">
             <button onClick={createUploadedTemplate} className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 font-medium">
@@ -759,15 +759,15 @@ const handleItemSelect = (e, item) => {
             <button onClick={addCircle} className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
               Add Circle (12 seats)
             </button>
-            <button 
-              onClick={orientSelectedItems} 
+            <button
+              onClick={orientSelectedItems}
               disabled={selectedSeats.length < 2}
               className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:bg-gray-400"
             >
               Orient Selected ({selectedSeats.length})
             </button>
-            <button 
-              onClick={deleteSelectedSeats} 
+            <button
+              onClick={deleteSelectedSeats}
               disabled={selectedSeats.length === 0}
               className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:bg-gray-400"
             >
@@ -787,7 +787,7 @@ const handleItemSelect = (e, item) => {
               <input type="file" accept=".json" onChange={loadTemplate} className="hidden" />
             </label>
           </div>
-          
+
           <div className="text-sm text-gray-600">
             <p>• Double-click empty space to add seats • Drag empty space to select multiple • Ctrl+click for multi-select • Right-click to delete</p>
             <p>• Mouse wheel: scroll • Ctrl+wheel: zoom • Shift+click: pan • Double-click item: edit label • Drag corner to resize • Delete key: remove selected</p>
@@ -812,11 +812,11 @@ const handleItemSelect = (e, item) => {
             {/* Grid background */}
             <defs>
               <pattern id="grid" width={20 * zoom} height={20 * zoom} patternUnits="userSpaceOnUse">
-                <path d={`M ${20 * zoom} 0 L 0 0 0 ${20 * zoom}`} fill="none" stroke="#f0f0f0" strokeWidth="1"/>
+                <path d={`M ${20 * zoom} 0 L 0 0 0 ${20 * zoom}`} fill="none" stroke="#f0f0f0" strokeWidth="1" />
               </pattern>
             </defs>
             <rect width="100%" height="100%" fill="url(#grid)" />
-            
+
             {/* Transform group for zoom and pan */}
             <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
               {/* Selection box */}
@@ -833,42 +833,42 @@ const handleItemSelect = (e, item) => {
                   pointerEvents="none"
                 />
               )}
-              
+
               {/* Render seats and furniture */}
               {seats.map((item) => {
                 const isSelected = selectedSeats.includes(item.id);
                 return (
                   <g key={item.id}>
                     {/* Main rectangle */}
-                  <rect
-                    x={item.x}
-                    y={item.y}
-                    width={item.width}
-                    height={item.height}
-                    fill={getItemColor(item, isSelected)}
-                    stroke={isSelected ? "#1d4ed8" : "#6b7280"}
-                    strokeWidth={isSelected ? "3" : "2"}
-                    rx="3"
-                    className="cursor-move hover:opacity-80"
-                    onMouseDown={(e) => {
-                      if (e.ctrlKey || e.metaKey) {
-                        // For Ctrl+click, handle selection immediately in mousedown
-                        e.stopPropagation();
-                        e.preventDefault();
-                        if (selectedSeats.includes(item.id)) {
-                          setSelectedSeats(prev => prev.filter(id => id !== item.id));
+                    <rect
+                      x={item.x}
+                      y={item.y}
+                      width={item.width}
+                      height={item.height}
+                      fill={getItemColor(item, isSelected)}
+                      stroke={isSelected ? "#1d4ed8" : "#6b7280"}
+                      strokeWidth={isSelected ? "3" : "2"}
+                      rx="3"
+                      className="cursor-move hover:opacity-80"
+                      onMouseDown={(e) => {
+                        if (e.ctrlKey || e.metaKey) {
+                          // For Ctrl+click, handle selection immediately in mousedown
+                          e.stopPropagation();
+                          e.preventDefault();
+                          if (selectedSeats.includes(item.id)) {
+                            setSelectedSeats(prev => prev.filter(id => id !== item.id));
+                          } else {
+                            setSelectedSeats(prev => [...prev, item.id]);
+                          }
                         } else {
-                          setSelectedSeats(prev => [...prev, item.id]);
+                          startDrag(e, item);
                         }
-                      } else {
-                        startDrag(e, item);
-                      }
-                    }}
-                    onClick={(e) => {
-                      if (!(e.ctrlKey || e.metaKey)) {
-                        handleItemSelect(e, item);
-                      }
-                    }}
+                      }}
+                      onClick={(e) => {
+                        if (!(e.ctrlKey || e.metaKey)) {
+                          handleItemSelect(e, item);
+                        }
+                      }}
                       onContextMenu={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -880,7 +880,7 @@ const handleItemSelect = (e, item) => {
                         setEditingLabel(item.id);
                       }}
                     />
-                    
+
                     {/* Resize handle (only show for single selection) */}
                     {isSelected && selectedSeats.length === 1 && (
                       <rect
@@ -893,21 +893,21 @@ const handleItemSelect = (e, item) => {
                         onMouseDown={(e) => startResize(e, item)}
                       />
                     )}
-                    
+
                     {/* Label */}
                     {editingLabel === item.id ? (
-                      <foreignObject x={item.x} y={item.y + item.height/2 - 10} width={item.width} height="20">
+                      <foreignObject x={item.x} y={item.y + item.height / 2 - 10} width={item.width} height="20">
                         <input
                           type="text"
                           defaultValue={item.label}
                           className="w-full text-xs text-center border-none outline-none bg-transparent"
                           onBlur={(e) => {
-                            setSeats(seats.map(s => s.id === item.id ? {...s, label: e.target.value} : s));
+                            setSeats(seats.map(s => s.id === item.id ? { ...s, label: e.target.value } : s));
                             setEditingLabel(null);
                           }}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
-                              setSeats(seats.map(s => s.id === item.id ? {...s, label: e.target.value} : s));
+                              setSeats(seats.map(s => s.id === item.id ? { ...s, label: e.target.value } : s));
                               setEditingLabel(null);
                             }
                           }}
@@ -929,7 +929,7 @@ const handleItemSelect = (e, item) => {
                   </g>
                 );
               })}
-              
+
               {/* Info text when empty */}
               {seats.length === 0 && (
                 <text
