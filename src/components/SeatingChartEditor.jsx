@@ -189,14 +189,12 @@ const handleItemSelect = (e, item) => {
       setSelectionBox(newBox);
       
       const selectedIds = seats.filter(seat => {
-        const seatCenterX = seat.x + seat.width / 2;
-        const seatCenterY = seat.y + seat.height / 2;
-        return seatCenterX >= newBox.x && 
-               seatCenterX <= newBox.x + newBox.width &&
-               seatCenterY >= newBox.y && 
-               seatCenterY <= newBox.y + newBox.height;
+        return seat.x < newBox.x + newBox.width && 
+              seat.x + seat.width > newBox.x &&
+              seat.y < newBox.y + newBox.height && 
+              seat.y + seat.height > newBox.y;
       }).map(seat => seat.id);
-      
+
       setSelectedSeats(selectedIds);
     } else if (isDragging && selectedSeats.length > 0) {
       const deltaX = coords.x - dragStartPos.x;
@@ -244,7 +242,7 @@ const handleItemSelect = (e, item) => {
       startSelection(e);
     }
   };
-  
+
   // Orient selected items - align and distribute evenly
   const orientSelectedItems = () => {
     if (selectedSeats.length < 2) return;
@@ -404,15 +402,16 @@ const handleItemSelect = (e, item) => {
 
   // Create template matching the uploaded image (enhanced)
   // Create template matching the hand-drawn diagram
+// Create template matching the hand-drawn diagram
 const createUploadedTemplate = () => {
   const newSeats = [];
   let id = Date.now();
   
-  // Left side - back row (8 seats, more spread out)
+  // Left side - back row (8 seats, spread out)
   for (let i = 0; i < 8; i++) {
     newSeats.push({
       id: id++,
-      x: 50 + i * 25, // wider spacing
+      x: 50 + i * 25,
       y: 60,
       width: 40,
       height: 20,
@@ -420,14 +419,14 @@ const createUploadedTemplate = () => {
       type: 'seat'
     });
   }
-
-  // Left side - front 4 columns (11 seats each, tighter spacing)
+  
+  // Left side - front 4 columns (11 seats each)
   for (let col = 0; col < 4; col++) {
     for (let row = 0; row < 11; row++) {
       newSeats.push({
         id: id++,
-        x: 50 + col * 50, // normal column spacing
-        y: 95 + row * 32, // tighter vertical spacing to fit 11 seats
+        x: 50 + col * 50,
+        y: 95 + row * 32,
         width: 40,
         height: 20,
         label: '',
@@ -436,11 +435,11 @@ const createUploadedTemplate = () => {
     }
   }
   
-  // Top horizontal row
+  // Top horizontal row (8 seats)
   for (let i = 0; i < 8; i++) {
     newSeats.push({
       id: id++,
-      x: 300 + i * 50,
+      x: 320 + i * 50,
       y: 40,
       width: 40,
       height: 20,
@@ -449,13 +448,13 @@ const createUploadedTemplate = () => {
     });
   }
   
-  // Center area - 5 horizontal rows
-  for (let row = 0; row < 5; row++) {
-    for (let seat = 0; seat < 8; seat++) {
+  // Center area - 4 rows in front of table (5 seats each, shorter width)
+  for (let row = 0; row < 4; row++) {
+    for (let seat = 0; seat < 5; seat++) {
       newSeats.push({
         id: id++,
-        x: 300 + seat * 50,
-        y: 120 + row * 40,
+        x: 370 + seat * 50,
+        y: 120 + row * 35,
         width: 40,
         height: 20,
         label: '',
@@ -464,11 +463,26 @@ const createUploadedTemplate = () => {
     }
   }
   
-  // Right side vertical column
+  // Bottom area - 3 rows (8 seats each, full width, extending under entrance)
+  for (let row = 0; row < 3; row++) {
+    for (let seat = 0; seat < 8; seat++) {
+      newSeats.push({
+        id: id++,
+        x: 320 + seat * 50,
+        y: 300 + row * 35,
+        width: 40,
+        height: 20,
+        label: '',
+        type: 'seat'
+      });
+    }
+  }
+  
+  // Right side vertical column (12 seats)
   for (let row = 0; row < 12; row++) {
     newSeats.push({
       id: id++,
-      x: 720,
+      x: 750,
       y: 60 + row * 35,
       width: 40,
       height: 20,
@@ -477,25 +491,10 @@ const createUploadedTemplate = () => {
     });
   }
   
-  // Bottom area - 3 horizontal rows
-  for (let row = 0; row < 3; row++) {
-    for (let seat = 0; seat < 8; seat++) {
-      newSeats.push({
-        id: id++,
-        x: 300 + seat * 50,
-        y: 380 + row * 40,
-        width: 40,
-        height: 20,
-        label: '',
-        type: 'seat'
-      });
-    }
-  }
-  
   // Table (top center)
   newSeats.push({
     id: id++,
-    x: 450,
+    x: 480,
     y: 80,
     width: 80,
     height: 30,
@@ -507,7 +506,7 @@ const createUploadedTemplate = () => {
   newSeats.push({
     id: id++,
     x: 50,
-    y: 520,
+    y: 420,
     width: 100,
     height: 40,
     label: 'ENTRANCE',
@@ -517,9 +516,9 @@ const createUploadedTemplate = () => {
   // Table (bottom right)
   newSeats.push({
     id: id++,
-    x: 670,
-    y: 520,
-    width: 90,
+    x: 720,
+    y: 420,
+    width: 70,
     height: 40,
     label: 'Table',
     type: 'table'
@@ -542,11 +541,11 @@ const createUploadedTemplate = () => {
     const chartWidth = maxX - minX;
     const chartHeight = maxY - minY;
     
-    const pageWidth = 1000;
-    const shareListWidth = 250;
-    const margin = 40;
+    const pageWidth = 1200; // wider for landscape
+    const shareListWidth = 150; // narrower share column
+    const margin = 30; // smaller margins
     const availableWidth = pageWidth - shareListWidth - (margin * 3);
-    const availableHeight = 700;
+    const availableHeight = 800; // taller for landscape
     
     const scaleX = availableWidth / chartWidth;
     const scaleY = availableHeight / chartHeight;
@@ -639,8 +638,8 @@ const createUploadedTemplate = () => {
             }
             .share-list li { 
               border-bottom: 1px solid #ddd; 
-              padding: 14px 0; 
-              font-size: 14px; 
+              padding: 8px 0; // tighter spacing
+              font-size: 12px; // smaller font
             }
             h3 { 
               margin-top: 0; 
@@ -667,14 +666,11 @@ const createUploadedTemplate = () => {
               <div class="chart-wrapper">
                 ${svgContent}
               </div>
-              <div class="note">
-                Total seats: ${seatCount} | Names can be written above each seat
-              </div>
             </div>
             <div class="share-section">
               <h3>Share</h3>
               <ul class="share-list">
-                ${Array.from({length: Math.max(20, Math.ceil(seatCount / 2))}, (_, i) => 
+                ${Array.from({length: 20}, (_, i) => 
                   `<li>${i + 1}. _________________________</li>`
                 ).join('')}
               </ul>
