@@ -102,11 +102,10 @@ const SeatingChartEditor = () => {
 
   // Handle canvas click (deselect all or start selection)
   const handleCanvasClick = (e) => {
-    console.log('handleCanvasClick called, clearing selection');
     if (isDragging || isResizing || isPanning || editingLabel) return;
 
-    // Don't clear selection if we just finished a selection drag
-    if (isSelecting) return;
+    // Don't clear selection if we just finished selecting (give it a moment)
+    if (tempSelection.length > 0) return;
 
     if (!e.ctrlKey && !e.metaKey) {
       setSelectedSeats([]);
