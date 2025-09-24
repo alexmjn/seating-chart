@@ -17,6 +17,7 @@ const SeatingChartEditor = () => {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const [tempSelection, setTempSelection] = useState([]);
+  const [justFinishedSelecting, setJustFinishedSelecting] = useState(false);
 
   // Prevent context menu on canvas
   useEffect(() => {
@@ -102,10 +103,10 @@ const SeatingChartEditor = () => {
 
   // Handle canvas click (deselect all or start selection)
   const handleCanvasClick = (e) => {
-    if (isDragging || isResizing || isPanning || editingLabel) return;
+    if (isDragging || isResizing || isPanning || editingLabel || isSelecting) return;
 
-    // Don't clear selection if we just finished selecting (give it a moment)
-    if (tempSelection.length > 0) return;
+    // Don't clear selection if we just finished a selection drag
+    if (justFinishedSelecting) return;
 
     if (!e.ctrlKey && !e.metaKey) {
       setSelectedSeats([]);
@@ -233,14 +234,14 @@ const SeatingChartEditor = () => {
   // Stop dragging/resizing/panning/selecting
   // Stop dragging/resizing/panning/selecting
   const stopInteraction = () => {
-    console.log('stopInteraction called, tempSelection:', tempSelection);
     setIsDragging(false);
     setIsResizing(false);
     setIsPanning(false);
 
-    // Commit temp selection to actual selection when finishing selection drag
-    if (isSelecting && tempSelection.length > 0) {
-      setSelectedSeats(tempSelection);
+    if (isSelecting) {
+      setJustFinishedSelecting(true);
+      // Clear the flag after a short delay
+      setTimeout(() => setJustFinishedSelecting(false), 100);
     }
 
     setIsSelecting(false);
