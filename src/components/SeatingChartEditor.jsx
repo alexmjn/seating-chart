@@ -437,130 +437,175 @@ const SeatingChartEditor = () => {
 
   // Create template matching the uploaded image (enhanced)
   const createUploadedTemplate = () => {
-    const newSeats = [];
-    let id = Date.now();
+    const newSeats = [
+      // Back row (7 seats)
+      { "id": Date.now() + 1, "x": 47, "y": 51, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 2, "x": 97, "y": 51, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 3, "x": 146, "y": 51, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 4, "x": 196, "y": 51, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 5, "x": 245, "y": 51, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 6, "x": 295, "y": 51, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 7, "x": 347, "y": 51, "width": 40, "height": 10, "label": "", "type": "seat" },
 
-    // Left side - back row (8 seats, spread out)
-    for (let i = 0; i < 8; i++) {
-      newSeats.push({
-        id: id++,
-        x: 50 + i * 25,
-        y: 80, // Moved down from title
-        width: 40,
-        height: 10,
-        label: '',
-        type: 'seat'
-      });
-    }
+      // Top right section (5 seats)
+      { "id": Date.now() + 8, "x": 519, "y": 51, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 9, "x": 577, "y": 51, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 10, "x": 634, "y": 51, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 11, "x": 692, "y": 51, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 12, "x": 749, "y": 51, "width": 40, "height": 10, "label": "", "type": "seat" },
 
-    // Left side - front 4 columns (11 seats each, better vertical spread)
-    for (let col = 0; col < 4; col++) {
-      for (let row = 0; row < 11; row++) {
-        newSeats.push({
-          id: id++,
-          x: 50 + col * 50,
-          y: 120 + row * 40, // More vertical spacing
-          width: 40,
-          height: 10,
-          label: '',
-          type: 'seat'
-        });
-      }
-    }
+      // Additional top seats
+      { "id": Date.now() + 13, "x": 505, "y": 120, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 14, "x": 594, "y": 120, "width": 40, "height": 10, "label": "", "type": "seat" },
 
-    // Top horizontal row (8 seats) - moved down
-    for (let i = 0; i < 8; i++) {
-      newSeats.push({
-        id: id++,
-        x: 320 + i * 50,
-        y: 80,
-        width: 40,
-        height: 10,
-        label: '',
-        type: 'seat'
-      });
-    }
+      // Left columns (4 columns with varying heights)
+      { "id": Date.now() + 15, "x": 50, "y": 120, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 16, "x": 50, "y": 167, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 17, "x": 50, "y": 213, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 18, "x": 50, "y": 260, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 19, "x": 50, "y": 307, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 20, "x": 50, "y": 353, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 21, "x": 50, "y": 400, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 22, "x": 50, "y": 446, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 23, "x": 50, "y": 493, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 24, "x": 50, "y": 540, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 25, "x": 50, "y": 586, "width": 40, "height": 10, "label": "", "type": "seat" },
 
-    // Center area - 4 rows (5 seats each, better spacing)
-    for (let row = 0; row < 4; row++) {
-      for (let seat = 0; seat < 5; seat++) {
-        newSeats.push({
-          id: id++,
-          x: 370 + seat * 50,
-          y: 160 + row * 45, // More spread
-          width: 40,
-          height: 10,
-          label: '',
-          type: 'seat'
-        });
-      }
-    }
+      // Column 2
+      { "id": Date.now() + 26, "x": 117, "y": 120, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 27, "x": 117, "y": 167, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 28, "x": 117, "y": 213, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 29, "x": 117, "y": 260, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 30, "x": 117, "y": 307, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 31, "x": 117, "y": 353, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 32, "x": 117, "y": 400, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 33, "x": 117, "y": 446, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 34, "x": 117, "y": 493, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 35, "x": 117, "y": 540, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 36, "x": 117, "y": 586, "width": 40, "height": 10, "label": "", "type": "seat" },
 
-    // Bottom area - 3 rows (8 seats each, pushed down)
-    for (let row = 0; row < 3; row++) {
-      for (let seat = 0; seat < 8; seat++) {
-        newSeats.push({
-          id: id++,
-          x: 320 + seat * 50,
-          y: 380 + row * 45, // More vertical spread
-          width: 40,
-          height: 10,
-          label: '',
-          type: 'seat'
-        });
-      }
-    }
+      // Column 3
+      { "id": Date.now() + 37, "x": 181, "y": 120, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 38, "x": 181, "y": 167, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 39, "x": 181, "y": 213, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 40, "x": 181, "y": 260, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 41, "x": 181, "y": 307, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 42, "x": 181, "y": 353, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 43, "x": 181, "y": 400, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 44, "x": 181, "y": 446, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 45, "x": 181, "y": 493, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 46, "x": 181, "y": 540, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 47, "x": 181, "y": 586, "width": 40, "height": 10, "label": "", "type": "seat" },
 
-    // Right side vertical column (12 seats, better spacing)
-    for (let row = 0; row < 12; row++) {
-      newSeats.push({
-        id: id++,
-        x: 750,
-        y: 80 + row * 40, // Better vertical distribution
-        width: 40,
-        height: 10,
-        label: '',
-        type: 'seat'
-      });
-    }
+      // Column 4
+      { "id": Date.now() + 48, "x": 245, "y": 120, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 49, "x": 245, "y": 167, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 50, "x": 245, "y": 213, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 51, "x": 245, "y": 260, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 52, "x": 245, "y": 307, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 53, "x": 245, "y": 353, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 54, "x": 245, "y": 400, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 55, "x": 245, "y": 446, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 56, "x": 245, "y": 493, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 57, "x": 245, "y": 540, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 58, "x": 245, "y": 586, "width": 40, "height": 10, "label": "", "type": "seat" },
 
-    // Table (top center) - moved down
-    newSeats.push({
-      id: id++,
-      x: 480,
-      y: 120,
-      width: 80,
-      height: 30,
-      label: 'Table',
-      type: 'table'
-    });
+      // Center sections (4 rows of 5 seats each)
+      { "id": Date.now() + 59, "x": 383, "y": 235, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 60, "x": 446, "y": 235, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 61, "x": 518, "y": 235, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 62, "x": 585, "y": 235, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 63, "x": 653, "y": 235, "width": 40, "height": 10, "label": "", "type": "seat" },
 
-    // Entrance (bottom left) - pushed down
-    newSeats.push({
-      id: id++,
-      x: 50,
-      y: 520,
-      width: 100,
-      height: 40,
-      label: 'ENTRANCE',
-      type: 'table'
-    });
+      { "id": Date.now() + 64, "x": 383, "y": 290, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 65, "x": 452, "y": 292, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 66, "x": 518, "y": 290, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 67, "x": 585, "y": 290, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 68, "x": 653, "y": 290, "width": 40, "height": 10, "label": "", "type": "seat" },
 
-    // Table (bottom right) - pushed down
-    newSeats.push({
-      id: id++,
-      x: 720,
-      y: 520,
-      width: 70,
-      height: 40,
-      label: 'Table',
-      type: 'table'
-    });
+      { "id": Date.now() + 69, "x": 383, "y": 345, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 70, "x": 452, "y": 343, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 71, "x": 518, "y": 345, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 72, "x": 585, "y": 345, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 73, "x": 653, "y": 345, "width": 40, "height": 10, "label": "", "type": "seat" },
+
+      { "id": Date.now() + 74, "x": 383, "y": 399, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 75, "x": 453, "y": 399, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 76, "x": 518, "y": 399, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 77, "x": 585, "y": 399, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 78, "x": 653, "y": 399, "width": 40, "height": 10, "label": "", "type": "seat" },
+
+      // Bottom 5 rows (8 seats each)
+      { "id": Date.now() + 79, "x": 332, "y": 521, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 80, "x": 382, "y": 521, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 81, "x": 433, "y": 521, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 82, "x": 483, "y": 521, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 83, "x": 533, "y": 521, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 84, "x": 583, "y": 521, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 85, "x": 633, "y": 521, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 86, "x": 683, "y": 521, "width": 40, "height": 10, "label": "", "type": "seat" },
+
+      { "id": Date.now() + 87, "x": 332, "y": 589, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 88, "x": 382, "y": 589, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 89, "x": 433, "y": 589, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 90, "x": 483, "y": 589, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 91, "x": 533, "y": 589, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 92, "x": 583, "y": 589, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 93, "x": 633, "y": 589, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 94, "x": 683, "y": 589, "width": 40, "height": 10, "label": "", "type": "seat" },
+
+      { "id": Date.now() + 95, "x": 332, "y": 657, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 96, "x": 382, "y": 657, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 97, "x": 433, "y": 657, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 98, "x": 483, "y": 657, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 99, "x": 533, "y": 657, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 100, "x": 583, "y": 657, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 101, "x": 633, "y": 657, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 102, "x": 683, "y": 657, "width": 40, "height": 10, "label": "", "type": "seat" },
+
+      { "id": Date.now() + 103, "x": 332, "y": 726, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 104, "x": 383, "y": 726, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 105, "x": 434, "y": 726, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 106, "x": 484, "y": 726, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 107, "x": 535, "y": 726, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 108, "x": 586, "y": 726, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 109, "x": 636, "y": 726, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 110, "x": 687, "y": 726, "width": 40, "height": 10, "label": "", "type": "seat" },
+
+      { "id": Date.now() + 111, "x": 333, "y": 796, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 112, "x": 384, "y": 796, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 113, "x": 434, "y": 796, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 114, "x": 484, "y": 796, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 115, "x": 534, "y": 796, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 116, "x": 585, "y": 796, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 117, "x": 635, "y": 796, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 118, "x": 685, "y": 796, "width": 40, "height": 10, "label": "", "type": "seat" },
+
+      // Right column (11 seats)
+      { "id": Date.now() + 119, "x": 802, "y": 98, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 120, "x": 802, "y": 145, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 121, "x": 802, "y": 191, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 122, "x": 802, "y": 238, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 123, "x": 802, "y": 285, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 124, "x": 802, "y": 331, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 125, "x": 802, "y": 378, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 126, "x": 802, "y": 425, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 127, "x": 802, "y": 471, "width": 40, "height": 10, "label": "", "type": "seat" },
+      { "id": Date.now() + 128, "x": 802, "y": 518, "width": 40, "height": 10, "label": "", "type": "seat" },
+
+      // Table (center)
+      { "id": Date.now() + 129, "x": 488, "y": 140, "width": 162, "height": 41, "label": "Table", "type": "table" },
+
+      // Entrance
+      { "id": Date.now() + 130, "x": 154, "y": 630, "width": 114, "height": 80, "label": "Entrance", "type": "table" },
+
+      // Coffee Table
+      { "id": Date.now() + 131, "x": 753, "y": 554, "width": 95, "height": 108, "label": "Coffee Table", "type": "coffee_table" }
+    ];
 
     setSeats(newSeats);
   };
 
-  // Generate printable PDF with improved layout
   // Generate printable PDF with improved layout
   const generatePDF = () => {
     if (seats.length === 0) return;
@@ -575,15 +620,17 @@ const SeatingChartEditor = () => {
     const chartWidth = maxX - minX;
     const chartHeight = maxY - minY;
 
-    const pageWidth = 1200;
-    const shareListWidth = 120; // Even narrower
-    const margin = 25;
-    const availableWidth = pageWidth - shareListWidth - (margin * 3);
-    const availableHeight = 750;
+    // Better scaling for maximum space usage
+    const pageWidth = 1400; // Much wider
+    const shareListWidth = 120; // Keep narrow
+    const margin = 20; // Smaller margins
+    const availableWidth = pageWidth - shareListWidth - (margin * 2);
+    const availableHeight = 900; // Use more vertical space
 
+    // More aggressive scaling
     const scaleX = availableWidth / chartWidth;
     const scaleY = availableHeight / chartHeight;
-    const scale = Math.min(scaleX, scaleY, 1.5); // Allow more scaling
+    const scale = Math.min(scaleX, scaleY, 2.0); // Allow up to 2x scaling
 
     const scaledWidth = chartWidth * scale;
     const scaledHeight = chartHeight * scale;
@@ -802,7 +849,7 @@ const SeatingChartEditor = () => {
       setSelectedSeats(newItems.map(item => item.id));
     }
   };
-  
+
   return (
     <div ref={containerRef} className={`w-full bg-gray-100 p-4 ${isFullscreen ? 'fixed inset-0 z-50' : 'h-screen'}`}>
       <div className="bg-white rounded-lg shadow-lg h-full flex flex-col">
