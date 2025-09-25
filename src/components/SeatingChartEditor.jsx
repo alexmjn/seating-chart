@@ -680,7 +680,7 @@ const SeatingChartEditor = () => {
         <head>
           <title>AA Meeting Seating Chart</title>
           <style>
-            @page { size: landscape; margin: 0.5in; }
+            @page { size: landscape; margin: 0.1in; }
             body { 
               margin: 0; 
               padding: ${margin}px; 
@@ -739,7 +739,7 @@ const SeatingChartEditor = () => {
             <div class="share-section">
               <h3>Share</h3>
               <ul class="share-list">
-                ${Array.from({ length: 20 }, (_, i) =>
+                ${Array.from({ length: 17 }, (_, i) =>
       `<li>${i + 1}. _______________</li>`
     ).join('')}
               </ul>
