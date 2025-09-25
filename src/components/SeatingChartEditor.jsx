@@ -18,6 +18,8 @@ const SeatingChartEditor = () => {
   const containerRef = useRef(null);
   const [tempSelection, setTempSelection] = useState([]);
   const [justFinishedSelecting, setJustFinishedSelecting] = useState(false);
+  const [undoStack, setUndoStack] = useState([]);
+  const [clipboard, setClipboard] = useState([]);
 
   // Prevent context menu on canvas
   useEffect(() => {
@@ -34,17 +36,32 @@ const SeatingChartEditor = () => {
     const handleKeyDown = (e) => {
       if (e.key === 'Delete' || e.key === 'Backspace') {
         if (selectedSeats.length > 0) {
+          saveUndoState(); // Save before delete
           deleteSelectedSeats();
         }
       }
       if (e.key === 'Escape') {
         setSelectedSeats([]);
       }
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === 'z') {
+          e.preventDefault();
+          handleUndo();
+        }
+        if (e.key === 'c') {
+          e.preventDefault();
+          handleCopy();
+        }
+        if (e.key === 'v') {
+          e.preventDefault();
+          handlePaste();
+        }
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedSeats]);
+  }, [selectedSeats, undoStack, clipboard, seats]);
 
   // Handle mouse wheel for zooming and scrolling
   const handleWheel = (e) => {
@@ -746,6 +763,46 @@ const SeatingChartEditor = () => {
     }
   };
 
+  // Save state for undo
+  const saveUndoState = () => {
+    setUndoStack(prev => [...prev.slice(-9), seats]); // Keep last 10 states
+  };
+
+  // Undo function
+  const handleUndo = () => {
+    if (undoStack.length > 0) {
+      const previousState = undoStack[undoStack.length - 1];
+      setSeats(previousState);
+      setUndoStack(prev => prev.slice(0, -1));
+      setSelectedSeats([]);
+    }
+  };
+
+  // Copy selected items
+  const handleCopy = () => {
+    const selectedItems = seats.filter(seat => selectedSeats.includes(seat.id));
+    if (selectedItems.length > 0) {
+      setClipboard(selectedItems.map(item => ({
+        ...item,
+        id: null // Will get new ID when pasted
+      })));
+    }
+  };
+
+  // Paste items
+  const handlePaste = () => {
+    if (clipboard.length > 0) {
+      const newItems = clipboard.map(item => ({
+        ...item,
+        id: Date.now() + Math.random(),
+        x: item.x + 20, // Offset so you can see the copy
+        y: item.y + 20
+      }));
+      setSeats([...seats, ...newItems]);
+      setSelectedSeats(newItems.map(item => item.id));
+    }
+  };
+  
   return (
     <div ref={containerRef} className={`w-full bg-gray-100 p-4 ${isFullscreen ? 'fixed inset-0 z-50' : 'h-screen'}`}>
       <div className="bg-white rounded-lg shadow-lg h-full flex flex-col">
@@ -806,8 +863,8 @@ const SeatingChartEditor = () => {
 
           <div className="text-sm text-gray-600">
             <p>• Double-click empty space: add seats • Drag empty space: select multiple • Ctrl+click: multi-select toggle</p>
-            <p>• Mouse wheel: scroll • Ctrl+wheel: zoom • Shift+drag: pan • Right-click: delete • Drag corner: resize</p>
-            <p>• Double-click item: edit label • Delete key: remove selected • Orient: align and distribute evenly</p>
+            <p>• Mouse wheel: scroll • Ctrl+wheel: zoom • Shift+drag: pan • Shift+right-click: delete • Drag corner: resize</p>
+            <p>• Double-click item: edit label • Ctrl+Z: undo • Ctrl+C/V: copy/paste • Delete key: remove selected</p>
             <p>• Selected: {selectedSeats.length} items • Zoom: {Math.round(zoom * 100)}%</p>
           </div>
         </div>
@@ -889,12 +946,14 @@ const SeatingChartEditor = () => {
                       onContextMenu={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        deleteSeat(item.id);
-                      }}
-                      onDoubleClick={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        setEditingLabel(item.id);
+                        if (e.shiftKey) {
+                          // Shift+right-click to delete (safer)
+                          saveUndoState();
+                          deleteSeat(item.id);
+                        } else {
+                          // Regular right-click just selects the item
+                          setSelectedSeats([item.id]);
+                        }
                       }}
                     />
 
