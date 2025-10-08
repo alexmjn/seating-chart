@@ -437,7 +437,7 @@ const SeatingChartEditor = () => {
 
   // Create template matching the uploaded image (enhanced)
   const createUploadedTemplate = () => {
-    const newSeats = [
+    const originalSeats = [
       // Back row (7 seats)
       { "id": Date.now() + 1, "x": 47, "y": 51, "width": 40, "height": 10, "label": "", "type": "seat" },
       { "id": Date.now() + 2, "x": 97, "y": 51, "width": 40, "height": 10, "label": "", "type": "seat" },
@@ -602,6 +602,19 @@ const SeatingChartEditor = () => {
       // Coffee Table
       { "id": Date.now() + 131, "x": 753, "y": 554, "width": 95, "height": 108, "label": "Coffee Table", "type": "coffee_table" }
     ];
+
+    // Calculate bounds for rotation center
+    const allX = originalSeats.map(s => s.x + s.width / 2);
+    const allY = originalSeats.map(s => s.y + s.height / 2);
+    const centerX = (Math.min(...allX) + Math.max(...allX)) / 2;
+    const centerY = (Math.min(...allY) + Math.max(...allY)) / 2;
+
+    // Rotate 180 degrees around center
+    const newSeats = originalSeats.map(seat => ({
+      ...seat,
+      x: 2 * centerX - seat.x - seat.width,
+      y: 2 * centerY - seat.y - seat.height
+    }));
 
     setSeats(newSeats);
   };
